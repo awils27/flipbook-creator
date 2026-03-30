@@ -95,6 +95,64 @@ export async function composeFlipbook(
   };
 }
 
+export type FlipbookComposer = {
+  addFrame: (frame: Blob, index: number) => Promise<void>;
+  finalize: (totalFrames: number) => Promise<GenerationResult>;
+};
+
+export function createFlipbookComposer(config: FlipbookConfig): FlipbookComposer {
+  const layout = deriveLayout(config);
+
+  if (!layout.isValid) {
+    throw new Error(layout.validationMessage ?? 'Invalid flipbook layout.');
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = layout.outputWidth;
+  canvas.height = layout.outputHeight;
+
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Unable to create a canvas rendering context.');
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  return {
+    async addFrame(frame: Blob, index: number) {
+      const bitmap = await createImageBitmap(frame);
+      const column = index % config.columns;
+      const row = Math.floor(index / config.columns);
+      const x = column * layout.cellSize;
+      const y = row * layout.cellSize;
+
+      drawFrameToCell({
+        context,
+        source: bitmap,
+        x,
+        y,
+        cellSize: layout.cellSize,
+        fitMode: config.fitMode,
+      });
+
+      bitmap.close();
+    },
+    async finalize(totalFrames: number) {
+      const blob = await canvasToBlob(canvas);
+      const objectUrl = URL.createObjectURL(blob);
+
+      return {
+        blob,
+        objectUrl,
+        width: canvas.width,
+        height: canvas.height,
+        totalFrames,
+      };
+    },
+  };
+}
+
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {

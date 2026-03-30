@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { getValidGridOptions } from '../lib/layout';
 import type { DerivedLayout, FlipbookConfig, FlipbookSheetSize } from '../types';
 
 const SHEET_SIZES: FlipbookSheetSize[] = [256, 512, 1024, 2048, 4096];
@@ -11,21 +11,14 @@ type ConfigPanelProps = {
 };
 
 export function ConfigPanel({ config, layout, disabled = false, onChange }: ConfigPanelProps) {
-  function updateNumber(
-    key: 'columns' | 'rows',
-    event: ChangeEvent<HTMLInputElement>,
-  ): void {
-    onChange({
-      ...config,
-      [key]: Math.max(1, Number.parseInt(event.target.value, 10) || 1),
-    });
-  }
+  const gridOptions = getValidGridOptions(config.sheetSize);
+  const selectedGridValue = `${config.columns}x${config.rows}`;
 
   return (
     <section className="panel">
       <div className="panel__header">
         <h2>Flipbook setup</h2>
-        <p>Square cells only in v1. The selected sheet size must divide evenly across both axes.</p>
+        <p>Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.</p>
       </div>
 
       <div className="form-grid">
@@ -50,27 +43,28 @@ export function ConfigPanel({ config, layout, disabled = false, onChange }: Conf
         </label>
 
         <label>
-          <span>Columns</span>
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={config.columns}
+          <span>Grid</span>
+          <select
+            value={selectedGridValue}
             disabled={disabled}
-            onChange={(event) => updateNumber('columns', event)}
-          />
-        </label>
-
-        <label>
-          <span>Rows</span>
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={config.rows}
-            disabled={disabled}
-            onChange={(event) => updateNumber('rows', event)}
-          />
+            onChange={(event) => {
+              const [columns, rows] = event.target.value.split('x').map(Number);
+              onChange({
+                ...config,
+                columns,
+                rows,
+              });
+            }}
+          >
+            {gridOptions.map((option) => (
+              <option
+                key={`${option.columns}x${option.rows}`}
+                value={`${option.columns}x${option.rows}`}
+              >
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
@@ -93,16 +87,22 @@ export function ConfigPanel({ config, layout, disabled = false, onChange }: Conf
 
       <dl className="stats-grid">
         <div>
+          <dt>Grid</dt>
+          <dd>
+            {config.columns} x {config.rows}
+          </dd>
+        </div>
+        <div>
           <dt>Total frames</dt>
-          <dd>{layout.totalFrames || '—'}</dd>
+          <dd>{layout.totalFrames || '-'}</dd>
         </div>
         <div>
           <dt>Cell size</dt>
-          <dd>{layout.cellSize ? `${layout.cellSize}px` : '—'}</dd>
+          <dd>{layout.cellSize ? `${layout.cellSize}px` : '-'}</dd>
         </div>
         <div>
           <dt>Output size</dt>
-          <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '—'}</dd>
+          <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}</dd>
         </div>
       </dl>
 

@@ -4,10 +4,10 @@ import { PreviewPanel } from './components/PreviewPanel';
 import { ProgressPanel } from './components/ProgressPanel';
 import { SourceInfoPanel } from './components/SourceInfoPanel';
 import { UploadField } from './components/UploadField';
-import { composeFlipbook } from './lib/composite';
-import { ensureFfmpegLoaded, extractFrames, setFfmpegEventHandlers } from './lib/ffmpeg';
+import { createFlipbookComposer } from './lib/composite';
+import { ensureFfmpegLoaded, extractFrames, resetFfmpeg, setFfmpegEventHandlers } from './lib/ffmpeg';
 import { createOutputFileName, downloadBlob } from './lib/file';
-import { buildSamplingTimestamps, deriveLayout } from './lib/layout';
+import { buildSamplingTimestamps, deriveLayout, getValidGridOptions } from './lib/layout';
 import { readSourceVideoInfo } from './lib/video';
 import type { FlipbookConfig, GenerationResult, ProgressState, SourceVideoInfo } from './types';
 
@@ -45,6 +45,31 @@ export default function App() {
       }
     };
   }, [result]);
+
+  useEffect(() => {
+    const validGridOptions = getValidGridOptions(config.sheetSize);
+    const hasCurrentOption = validGridOptions.some(
+      (option) => option.columns === config.columns && option.rows === config.rows,
+    );
+
+    if (hasCurrentOption) {
+      return;
+    }
+
+    const fallbackOption =
+      validGridOptions.find((option) => option.columns === 8 && option.rows === 8) ??
+      validGridOptions[0];
+
+    if (!fallbackOption) {
+      return;
+    }
+
+    setConfig((current) => ({
+      ...current,
+      columns: fallbackOption.columns,
+      rows: fallbackOption.rows,
+    }));
+  }, [config.sheetSize, config.columns, config.rows]);
 
   async function handleFileSelect(file: File | null) {
     setError(null);
@@ -105,6 +130,8 @@ export default function App() {
     setError(null);
     setLogLines([]);
 
+    let lastLogLine = '';
+
     try {
       let extractionProgressBase = 0;
       setFfmpegEventHandlers({
@@ -114,6 +141,7 @@ export default function App() {
             return;
           }
 
+          lastLogLine = trimmed;
           setLogLines((current) => [...current.slice(-24), trimmed]);
         },
         onProgress: (event) => {
@@ -149,41 +177,47 @@ export default function App() {
       await ensureFfmpegLoaded();
 
       const timestamps = buildSamplingTimestamps(sourceInfo.durationSeconds, layout.totalFrames);
+      const composer = createFlipbookComposer(config);
 
       setProgress({
         phase: 'extracting-frames',
-        message: 'Extracting source frames...',
+        message: 'Processing frames...',
         current: 0,
         total: timestamps.length,
         indeterminate: false,
       });
-      const frames = await extractFrames(sourceFile, timestamps, (current, total) => {
+      await extractFrames(
+        sourceFile,
+        timestamps,
+        async (frame, index, total) => {
+          await composer.addFrame(frame, index);
+          setProgress({
+            phase: 'extracting-frames',
+            message: `Processing frames (${index + 1}/${total})...`,
+            current: index + 1,
+            total,
+            indeterminate: false,
+          });
+        },
+        (current, total) => {
         extractionProgressBase = current;
         setProgress({
           phase: 'extracting-frames',
-          message: `Extracting source frames (${current}/${total})...`,
+          message: `Processing frames (${current}/${total})...`,
           current,
           total,
           indeterminate: false,
         });
-      });
+        });
 
       setProgress({
         phase: 'compositing',
-        message: 'Compositing flipbook sheet...',
+        message: 'Exporting flipbook PNG...',
         current: 0,
-        total: frames.length,
+        total: 1,
         indeterminate: false,
       });
-      const nextResult = await composeFlipbook(frames, config, (current, total) => {
-        setProgress({
-          phase: 'compositing',
-          message: `Compositing flipbook sheet (${current}/${total})...`,
-          current,
-          total,
-          indeterminate: false,
-        });
-      });
+      const nextResult = await composer.finalize(layout.totalFrames);
 
       setResult(nextResult);
       setProgress({
@@ -194,10 +228,23 @@ export default function App() {
         indeterminate: false,
       });
     } catch (generationError) {
-      setError(
+      resetFfmpeg();
+
+      const baseMessage =
         generationError instanceof Error
           ? generationError.message
-          : 'Generation failed. Try a shorter clip or a smaller sheet size.',
+          : 'Generation failed. Try a shorter clip or a smaller sheet size.';
+      const detailedMessage = lastLogLine;
+      const memoryHint =
+        detailedMessage?.toLowerCase().includes('memory') ||
+        detailedMessage?.toLowerCase().includes('allocation')
+          ? ' The browser likely ran out of memory for this job.'
+          : '';
+
+      setError(
+        detailedMessage && detailedMessage !== baseMessage
+          ? `${baseMessage} Last FFmpeg log: ${detailedMessage}.${memoryHint}`
+          : `${baseMessage}${memoryHint}`,
       );
       setProgress({
         phase: 'error',

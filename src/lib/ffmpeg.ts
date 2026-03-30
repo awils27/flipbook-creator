@@ -1,5 +1,8 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
+import classWorkerURL from '@ffmpeg/ffmpeg/worker?url';
+import coreURL from '@ffmpeg/core?url';
+import wasmURL from '@ffmpeg/core/wasm?url';
 
 type FfmpegLogEvent = {
   type: string;
@@ -10,9 +13,6 @@ type FfmpegProgressEvent = {
   progress: number;
   time: number;
 };
-
-const CORE_VERSION = '0.12.10';
-const CORE_BASE_URL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`;
 
 let ffmpegInstance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
@@ -27,12 +27,6 @@ async function getFFmpeg(): Promise<FFmpeg> {
   if (!loadPromise) {
     loadPromise = (async () => {
       const ffmpeg = new FFmpeg();
-
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-
       ffmpeg.on('log', (event) => {
         logListener?.(event);
       });
@@ -41,8 +35,19 @@ async function getFFmpeg(): Promise<FFmpeg> {
         progressListener?.(event);
       });
 
-      ffmpegInstance = ffmpeg;
-      return ffmpeg;
+      try {
+        await ffmpeg.load({
+          classWorkerURL,
+          coreURL,
+          wasmURL,
+        });
+
+        ffmpegInstance = ffmpeg;
+        return ffmpeg;
+      } catch (error) {
+        loadPromise = null;
+        throw error;
+      }
     })();
   }
 
@@ -51,6 +56,15 @@ async function getFFmpeg(): Promise<FFmpeg> {
 
 export async function ensureFfmpegLoaded(): Promise<void> {
   await getFFmpeg();
+}
+
+export function resetFfmpeg(): void {
+  if (ffmpegInstance) {
+    ffmpegInstance.terminate();
+  }
+
+  ffmpegInstance = null;
+  loadPromise = null;
 }
 
 export function setFfmpegEventHandlers(handlers: {
@@ -64,6 +78,7 @@ export function setFfmpegEventHandlers(handlers: {
 export async function extractFrames(
   file: File,
   timestamps: number[],
+  onFrame?: (frame: Blob, index: number, total: number) => Promise<void> | void,
   onProgress?: (current: number, total: number) => void,
 ): Promise<Blob[]> {
   const ffmpeg = await getFFmpeg();
@@ -97,7 +112,12 @@ export async function extractFrames(
       }
 
       const bytes = new Uint8Array(data);
-      outputFrames.push(new Blob([bytes], { type: 'image/png' }));
+      const frameBlob = new Blob([bytes], { type: 'image/png' });
+      if (onFrame) {
+        await onFrame(frameBlob, index, timestamps.length);
+      } else {
+        outputFrames.push(frameBlob);
+      }
       await safeDelete(ffmpeg, frameName);
       onProgress?.(index + 1, timestamps.length);
     }

@@ -1,5 +1,11 @@
 import type { DerivedLayout, FlipbookConfig } from '../types';
 
+export type GridOption = {
+  columns: number;
+  rows: number;
+  label: string;
+};
+
 export function deriveLayout(config: FlipbookConfig): DerivedLayout {
   const { sheetSize, columns, rows } = config;
 
@@ -46,6 +52,24 @@ export function buildSamplingTimestamps(durationSeconds: number, frameCount: num
     const timestamp = ((index + 0.5) / frameCount) * durationSeconds;
     return Math.min(timestamp, maxTimestamp);
   });
+}
+
+export function getValidGridOptions(sheetSize: number): GridOption[] {
+  const options: GridOption[] = [];
+
+  for (let divisor = 1; divisor <= sheetSize; divisor += 1) {
+    if (sheetSize % divisor !== 0) {
+      continue;
+    }
+
+    options.push({
+      columns: divisor,
+      rows: divisor,
+      label: `${divisor} x ${divisor} (${sheetSize / divisor}px cells)`,
+    });
+  }
+
+  return options;
 }
 
 function invalidLayout(message: string): DerivedLayout {
