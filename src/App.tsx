@@ -133,7 +133,6 @@ export default function App() {
     let lastLogLine = '';
 
     try {
-      let extractionProgressBase = 0;
       setFfmpegEventHandlers({
         onLog: (event) => {
           const trimmed = event.message.trim();
@@ -154,11 +153,11 @@ export default function App() {
               return current;
             }
 
-            const nextCurrent = Math.min(extractionProgressBase + event.progress, current.total);
+            const nextCurrent = Math.min(event.progress * current.total, current.total);
             return {
               ...current,
               current: nextCurrent,
-              message: `Extracting source frames (${Math.min(
+              message: `Processing frames (${Math.min(
                 Math.ceil(nextCurrent),
                 current.total,
               )}/${current.total})...`,
@@ -189,6 +188,7 @@ export default function App() {
       await extractFrames(
         sourceFile,
         timestamps,
+        config,
         async (frame, index, total) => {
           await composer.addFrame(frame, index);
           setProgress({
@@ -200,14 +200,13 @@ export default function App() {
           });
         },
         (current, total) => {
-        extractionProgressBase = current;
-        setProgress({
-          phase: 'extracting-frames',
-          message: `Processing frames (${current}/${total})...`,
-          current,
-          total,
-          indeterminate: false,
-        });
+          setProgress({
+            phase: 'extracting-frames',
+            message: `Processing frames (${current}/${total})...`,
+            current,
+            total,
+            indeterminate: false,
+          });
         });
 
       setProgress({
@@ -291,7 +290,13 @@ export default function App() {
           </section>
 
           <SourceInfoPanel sourceInfo={sourceInfo} />
-          <ConfigPanel config={config} layout={layout} disabled={isGenerating} onChange={setConfig} />
+          <ConfigPanel
+            config={config}
+            layout={layout}
+            sourceDurationSeconds={sourceInfo?.durationSeconds ?? null}
+            disabled={isGenerating}
+            onChange={setConfig}
+          />
 
           <div className="action-row">
             <button

@@ -6,13 +6,24 @@ const SHEET_SIZES: FlipbookSheetSize[] = [256, 512, 1024, 2048, 4096];
 type ConfigPanelProps = {
   config: FlipbookConfig;
   layout: DerivedLayout;
+  sourceDurationSeconds: number | null;
   disabled?: boolean;
   onChange: (config: FlipbookConfig) => void;
 };
 
-export function ConfigPanel({ config, layout, disabled = false, onChange }: ConfigPanelProps) {
+export function ConfigPanel({
+  config,
+  layout,
+  sourceDurationSeconds,
+  disabled = false,
+  onChange,
+}: ConfigPanelProps) {
   const gridOptions = getValidGridOptions(config.sheetSize);
   const selectedGridValue = `${config.columns}x${config.rows}`;
+  const playbackFps =
+    layout.isValid && sourceDurationSeconds && sourceDurationSeconds > 0
+      ? layout.totalFrames / sourceDurationSeconds
+      : null;
 
   return (
     <section className="panel">
@@ -104,7 +115,18 @@ export function ConfigPanel({ config, layout, disabled = false, onChange }: Conf
           <dt>Output size</dt>
           <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}</dd>
         </div>
+        <div>
+          <dt>Playback FPS</dt>
+          <dd>{playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}</dd>
+        </div>
       </dl>
+
+      {playbackFps ? (
+        <p className="status-message">
+          Play the sheet at <strong>{playbackFps.toFixed(3)} fps</strong> in-engine to match the
+          original clip timing across {layout.totalFrames} sampled frames.
+        </p>
+      ) : null}
 
       {!layout.isValid ? (
         <p className="status-message status-message--error">{layout.validationMessage}</p>
