@@ -5,7 +5,7 @@ import { ProgressPanel } from './components/ProgressPanel';
 import { SourceInfoPanel } from './components/SourceInfoPanel';
 import { UploadField } from './components/UploadField';
 import { composeFlipbook } from './lib/composite';
-import { ensureFfmpegLoaded, extractFrames } from './lib/ffmpeg';
+import { ensureFfmpegLoaded, extractFrames, setFfmpegEventHandlers } from './lib/ffmpeg';
 import { createOutputFileName, downloadBlob } from './lib/file';
 import { buildSamplingTimestamps, deriveLayout } from './lib/layout';
 import { readSourceVideoInfo } from './lib/video';
@@ -33,6 +33,7 @@ export default function App() {
   const [progress, setProgress] = useState<ProgressState>(IDLE_PROGRESS);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [logLines, setLogLines] = useState<string[]>([]);
 
   const layout = useMemo(() => deriveLayout(config), [config]);
   const downloadFileName = sourceFile ? createOutputFileName(sourceFile.name, config) : null;
@@ -50,6 +51,7 @@ export default function App() {
     setSourceFile(file);
     setSourceInfo(null);
     setProgress(IDLE_PROGRESS);
+    setLogLines([]);
 
     if (result) {
       URL.revokeObjectURL(result.objectUrl);
@@ -101,13 +103,48 @@ export default function App() {
 
     setIsGenerating(true);
     setError(null);
+    setLogLines([]);
 
     try {
+      let extractionProgressBase = 0;
+      setFfmpegEventHandlers({
+        onLog: (event) => {
+          const trimmed = event.message.trim();
+          if (!trimmed) {
+            return;
+          }
+
+          setLogLines((current) => [...current.slice(-24), trimmed]);
+        },
+        onProgress: (event) => {
+          if (progress.phase !== 'extracting-frames') {
+            return;
+          }
+
+          setProgress((current) => {
+            if (current.phase !== 'extracting-frames' || current.total === 0) {
+              return current;
+            }
+
+            const nextCurrent = Math.min(extractionProgressBase + event.progress, current.total);
+            return {
+              ...current,
+              current: nextCurrent,
+              message: `Extracting source frames (${Math.min(
+                Math.ceil(nextCurrent),
+                current.total,
+              )}/${current.total})...`,
+            };
+          });
+        },
+      });
+
       setProgress({
         phase: 'loading-engine',
         message: 'Loading processing engine...',
         current: 0,
         total: 0,
+        indeterminate: true,
       });
       await ensureFfmpegLoaded();
 
@@ -118,13 +155,16 @@ export default function App() {
         message: 'Extracting source frames...',
         current: 0,
         total: timestamps.length,
+        indeterminate: false,
       });
       const frames = await extractFrames(sourceFile, timestamps, (current, total) => {
+        extractionProgressBase = current;
         setProgress({
           phase: 'extracting-frames',
           message: `Extracting source frames (${current}/${total})...`,
           current,
           total,
+          indeterminate: false,
         });
       });
 
@@ -133,6 +173,7 @@ export default function App() {
         message: 'Compositing flipbook sheet...',
         current: 0,
         total: frames.length,
+        indeterminate: false,
       });
       const nextResult = await composeFlipbook(frames, config, (current, total) => {
         setProgress({
@@ -140,6 +181,7 @@ export default function App() {
           message: `Compositing flipbook sheet (${current}/${total})...`,
           current,
           total,
+          indeterminate: false,
         });
       });
 
@@ -149,6 +191,7 @@ export default function App() {
         message: 'Flipbook ready for preview and download.',
         current: layout.totalFrames,
         total: layout.totalFrames,
+        indeterminate: false,
       });
     } catch (generationError) {
       setError(
@@ -161,8 +204,10 @@ export default function App() {
         message: 'Generation failed.',
         current: 0,
         total: 0,
+        indeterminate: false,
       });
     } finally {
+      setFfmpegEventHandlers({});
       setIsGenerating(false);
     }
   }
@@ -214,7 +259,7 @@ export default function App() {
         </div>
 
         <div className="workspace__right">
-          <ProgressPanel progress={progress} error={error} />
+          <ProgressPanel progress={progress} error={error} logLines={logLines} />
           <PreviewPanel
             result={result}
             downloadFileName={downloadFileName}

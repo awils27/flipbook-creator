@@ -1,11 +1,23 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
+type FfmpegLogEvent = {
+  type: string;
+  message: string;
+};
+
+type FfmpegProgressEvent = {
+  progress: number;
+  time: number;
+};
+
 const CORE_VERSION = '0.12.10';
 const CORE_BASE_URL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`;
 
 let ffmpegInstance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
+let logListener: ((event: FfmpegLogEvent) => void) | null = null;
+let progressListener: ((event: FfmpegProgressEvent) => void) | null = null;
 
 async function getFFmpeg(): Promise<FFmpeg> {
   if (ffmpegInstance) {
@@ -21,6 +33,14 @@ async function getFFmpeg(): Promise<FFmpeg> {
         wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
       });
 
+      ffmpeg.on('log', (event) => {
+        logListener?.(event);
+      });
+
+      ffmpeg.on('progress', (event) => {
+        progressListener?.(event);
+      });
+
       ffmpegInstance = ffmpeg;
       return ffmpeg;
     })();
@@ -31,6 +51,14 @@ async function getFFmpeg(): Promise<FFmpeg> {
 
 export async function ensureFfmpegLoaded(): Promise<void> {
   await getFFmpeg();
+}
+
+export function setFfmpegEventHandlers(handlers: {
+  onLog?: ((event: FfmpegLogEvent) => void) | null;
+  onProgress?: ((event: FfmpegProgressEvent) => void) | null;
+}): void {
+  logListener = handlers.onLog ?? null;
+  progressListener = handlers.onProgress ?? null;
 }
 
 export async function extractFrames(

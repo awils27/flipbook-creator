@@ -247,6 +247,28 @@ button {
   transition: width 180ms ease-out;
 }
 
+.progress--indeterminate .progress__bar {
+  width: 35%;
+  animation: progress-indeterminate 1.15s ease-in-out infinite;
+}
+
+.log-panel {
+  margin-top: 16px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(184, 211, 196, 0.12);
+  background: rgba(4, 11, 12, 0.9);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.log-panel__line + .log-panel__line {
+  margin-top: 6px;
+}
+
 .preview-panel {
   min-height: 440px;
 }
@@ -300,5 +322,15 @@ button {
 
   .hero h1 {
     font-size: 2.6rem;
+  }
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(320%);
   }
 }

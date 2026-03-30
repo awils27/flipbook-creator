@@ -47,4 +47,5 @@ export type ProgressState = {
   message: string;
   current: number;
   total: number;
+  indeterminate?: boolean;
 };
