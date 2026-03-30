@@ -8,7 +8,6 @@ import { createFlipbookComposer } from './lib/composite';
 import {
   ensureFfmpegLoaded,
   extractFrames,
-  probeVideoFrameInfo,
   resetFfmpeg,
   setFfmpegEventHandlers,
 } from './lib/ffmpeg';
@@ -31,6 +30,8 @@ const IDLE_PROGRESS: ProgressState = {
   total: 0,
 };
 
+const DEFAULT_ESTIMATED_SOURCE_FPS = 30;
+
 export default function App() {
   const [config, setConfig] = useState<FlipbookConfig>(DEFAULT_CONFIG);
   const [sourceFile, setSourceFile] = useState<File | null>(null);
@@ -38,6 +39,7 @@ export default function App() {
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [progress, setProgress] = useState<ProgressState>(IDLE_PROGRESS);
   const [error, setError] = useState<string | null>(null);
+  const [isInspectingSource, setIsInspectingSource] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [logLines, setLogLines] = useState<string[]>([]);
 
@@ -100,6 +102,7 @@ export default function App() {
     }
 
     try {
+      setIsInspectingSource(true);
       setProgress({
         phase: 'reading-video',
         message: 'Reading source video metadata...',
@@ -107,31 +110,16 @@ export default function App() {
         total: 0,
       });
       const metadata = await readSourceVideoInfo(file);
-      setSourceInfo(metadata);
+      const estimatedFrameCount =
+        metadata.durationSeconds !== null
+          ? Math.max(1, Math.round(metadata.durationSeconds * DEFAULT_ESTIMATED_SOURCE_FPS))
+          : null;
 
-      setProgress({
-        phase: 'loading-engine',
-        message: 'Inspecting source frame count...',
-        current: 0,
-        total: 0,
-        indeterminate: true,
+      setSourceInfo({
+        ...metadata,
+        frameCount: estimatedFrameCount,
+        frameRate: DEFAULT_ESTIMATED_SOURCE_FPS,
       });
-
-      try {
-        const frameInfo = await probeVideoFrameInfo(file);
-        const estimatedFrameCount =
-          metadata.durationSeconds !== null && frameInfo.frameRate !== null
-            ? Math.max(1, Math.round(metadata.durationSeconds * frameInfo.frameRate))
-            : null;
-
-        setSourceInfo({
-          ...metadata,
-          frameCount: estimatedFrameCount,
-          frameRate: frameInfo.frameRate,
-        });
-      } catch {
-        setSourceInfo(metadata);
-      }
 
       setProgress(IDLE_PROGRESS);
     } catch (metadataError) {
@@ -144,11 +132,13 @@ export default function App() {
         current: 0,
         total: 0,
       });
+    } finally {
+      setIsInspectingSource(false);
     }
   }
 
   async function handleGenerate() {
-    if (!sourceFile || !sourceInfo?.durationSeconds || !layout.isValid) {
+    if (!sourceFile || !sourceInfo?.durationSeconds || !layout.isValid || isInspectingSource) {
       return;
     }
 
@@ -344,10 +334,20 @@ export default function App() {
               <button
                 type="button"
                 className="min-h-[52px] rounded-full bg-linear-to-br from-amber-300 to-orange-400 px-6 py-3.5 text-sm font-extrabold tracking-[0.01em] text-slate-950 shadow-[0_12px_32px_rgba(235,146,80,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
-                disabled={!sourceFile || !sourceInfo?.durationSeconds || !layout.isValid || isGenerating}
+                disabled={
+                  !sourceFile ||
+                  !sourceInfo?.durationSeconds ||
+                  !layout.isValid ||
+                  isGenerating ||
+                  isInspectingSource
+                }
                 onClick={handleGenerate}
               >
-                {isGenerating ? 'Generating...' : 'Generate Flipbook'}
+                {isInspectingSource
+                  ? 'Inspecting Source...'
+                  : isGenerating
+                    ? 'Generating...'
+                    : 'Generate Flipbook'}
               </button>
             </div>
           </div>

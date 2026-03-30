@@ -50,7 +50,7 @@ export function SourceInfoPanel({ sourceInfo }: SourceInfoPanelProps) {
             </dd>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-            <dt className="text-xs text-slate-300/55">Source FPS</dt>
+            <dt className="text-xs text-slate-300/55">Estimated FPS</dt>
             <dd className="mt-1.5 text-sm font-semibold text-slate-100">
               {sourceInfo.frameRate ? sourceInfo.frameRate.toFixed(3) : 'Unknown'}
             </dd>
@@ -65,6 +65,12 @@ export function SourceInfoPanel({ sourceInfo }: SourceInfoPanelProps) {
       {sourceInfo && sourceInfo.sizeBytes > 250 * 1024 * 1024 ? (
         <p className="mt-3 text-sm text-amber-300">
           Large source files can exceed browser memory limits while decoding frames.
+        </p>
+      ) : null}
+
+      {sourceInfo?.frameRate ? (
+        <p className="mt-3 text-sm text-slate-300/75">
+          Source frame estimates currently assume a {sourceInfo.frameRate.toFixed(0)} fps clip.
         </p>
       ) : null}
     </section>

@@ -60,49 +60,6 @@ export async function ensureFfmpegLoaded(): Promise<void> {
   await getFFmpeg();
 }
 
-export async function probeVideoFrameInfo(file: File): Promise<{
-  frameCount: number | null;
-  frameRate: number | null;
-}> {
-  const ffmpeg = await getFFmpeg();
-  const inputName = `probe${getFileExtension(file.name) || '.mp4'}`;
-  const outputName = 'probe-stream-info.txt';
-
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-  try {
-    const exitCode = await ffmpeg.ffprobe([
-      '-v',
-      'error',
-      '-select_streams',
-      'v:0',
-      '-show_entries',
-      'stream=avg_frame_rate',
-      '-of',
-      'default=noprint_wrappers=1',
-      inputName,
-      '-o',
-      outputName,
-    ]);
-
-    if (exitCode !== 0) {
-      return { frameCount: null, frameRate: null };
-    }
-
-    const rawOutput = await ffmpeg.readFile(outputName, 'utf8');
-    const text = typeof rawOutput === 'string' ? rawOutput : '';
-    const parsed = parseProbeOutput(text);
-
-    return {
-      frameCount: null,
-      frameRate: parsed.frameRate,
-    };
-  } finally {
-    await safeDelete(ffmpeg, outputName);
-    await safeDelete(ffmpeg, inputName);
-  }
-}
-
 export function resetFfmpeg(): void {
   if (ffmpegInstance) {
     ffmpegInstance.terminate();
@@ -201,39 +158,6 @@ async function safeDelete(ffmpeg: FFmpeg, fileName: string): Promise<void> {
 function getFileExtension(fileName: string): string {
   const match = /\.[^.]+$/.exec(fileName);
   return match?.[0] ?? '';
-}
-
-function parseProbeOutput(text: string): { frameRate: number | null } {
-  const values = new Map<string, string>();
-
-  for (const line of text.split(/\r?\n/)) {
-    const [key, value] = line.split('=');
-    if (!key || value === undefined) {
-      continue;
-    }
-
-    values.set(key.trim(), value.trim());
-  }
-
-  const frameRate = parseFrameRate(values.get('avg_frame_rate'));
-
-  return {
-    frameRate,
-  };
-}
-
-function parseFrameRate(value: string | undefined): number | null {
-  if (!value || value === 'N/A') {
-    return null;
-  }
-
-  const [numerator, denominator] = value.split('/').map(Number);
-
-  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
-    return null;
-  }
-
-  return numerator / denominator;
 }
 
 function buildFrameFilter(cellSize: number, fitMode: FlipbookConfig['fitMode']): string {
