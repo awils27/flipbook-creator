@@ -1,6 +1,6 @@
 export type FitMode = 'contain' | 'stretch';
 
-export type FlipbookSheetSize = 256 | 512 | 1024 | 2048 | 4096;
+export type FlipbookSheetSize = 256 | 512 | 1024 | 2048 | 4096 | 8192;
 
 export type FlipbookConfig = {
   sheetSize: FlipbookSheetSize;

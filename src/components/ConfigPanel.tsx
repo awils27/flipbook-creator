@@ -1,7 +1,7 @@
 import { getValidGridOptions } from '../lib/layout';
 import type { DerivedLayout, FlipbookConfig, FlipbookSheetSize } from '../types';
 
-const SHEET_SIZES: FlipbookSheetSize[] = [256, 512, 1024, 2048, 4096];
+const SHEET_SIZES: FlipbookSheetSize[] = [256, 512, 1024, 2048, 4096, 8192];
 
 type ConfigPanelProps = {
   config: FlipbookConfig;
@@ -169,9 +169,10 @@ export function ConfigPanel({
         <p className="mt-3 text-sm text-rose-300">{layout.validationMessage}</p>
       ) : null}
 
-      {config.sheetSize === 4096 ? (
+      {config.sheetSize >= 4096 ? (
         <p className="mt-3 text-sm text-amber-300">
-          4096 textures can be expensive in browser memory. Expect longer processing times.
+          {config.sheetSize} textures can be expensive in browser memory. Expect longer processing
+          times.
         </p>
       ) : null}
 
