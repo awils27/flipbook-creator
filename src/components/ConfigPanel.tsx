@@ -46,21 +46,24 @@ export function ConfigPanel({
       : null;
 
   return (
-    <section className="rounded-[22px] border border-white/15 bg-slate-950/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-50">Flipbook setup</h2>
-        <p className="mt-2 text-sm text-slate-300/70">
+    <section className="metro-tile p-6">
+      <div className="mb-5">
+        <p className="metro-kicker">Step 02</p>
+        <h2 className="metro-title mt-2">Tile Configuration</h2>
+        <p className="metro-body mt-3 text-sm leading-6">
           Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="grid gap-2">
-          <span className="text-sm font-bold tracking-wide text-slate-100">Sheet size</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">
+            Sheet Size
+          </span>
           <select
             value={config.sheetSize}
             disabled={disabled}
-            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -77,11 +80,11 @@ export function ConfigPanel({
         </label>
 
         <label className="grid gap-2">
-          <span className="text-sm font-bold tracking-wide text-slate-100">Grid</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">Grid</span>
           <select
             value={selectedGridValue}
             disabled={disabled}
-            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) => {
               const [columns, rows] = event.target.value.split('x').map(Number);
               onChange({
@@ -103,11 +106,13 @@ export function ConfigPanel({
         </label>
 
         <label className="grid gap-2">
-          <span className="text-sm font-bold tracking-wide text-slate-100">Fit mode</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">
+            Fit Mode
+          </span>
           <select
             value={config.fitMode}
             disabled={disabled}
-            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -121,72 +126,66 @@ export function ConfigPanel({
         </label>
       </div>
 
-      <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Grid</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+      <dl className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="metro-metric">
+          <dt>Grid</dt>
+          <dd>
             {config.columns} x {config.rows}
           </dd>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Total frames</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">{layout.totalFrames || '-'}</dd>
+        <div className="metro-metric">
+          <dt>Total Frames</dt>
+          <dd>{layout.totalFrames || '-'}</dd>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Cell size</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
-            {layout.cellSize ? `${layout.cellSize}px` : '-'}
-          </dd>
+        <div className="metro-metric">
+          <dt>Cell Size</dt>
+          <dd>{layout.cellSize ? `${layout.cellSize}px` : '-'}</dd>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Output size</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
-            {layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}
-          </dd>
+        <div className="metro-metric">
+          <dt>Output Size</dt>
+          <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}</dd>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Playback FPS</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
-            {playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}
-          </dd>
+        <div className="metro-metric">
+          <dt>Playback Fps</dt>
+          <dd>{playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}</dd>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-          <dt className="text-xs text-slate-300/55">Source aspect</dt>
-          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
-            {aspectRatioLabel ?? '-'}
-          </dd>
+        <div className="metro-metric">
+          <dt>Source Aspect</dt>
+          <dd>{aspectRatioLabel ?? '-'}</dd>
         </div>
       </dl>
 
       {playbackFps ? (
-        <p className="mt-3 text-sm text-slate-300/75">
-          Play the sheet at <strong className="text-slate-100">{playbackFps.toFixed(3)} fps</strong>{' '}
+        <p className="metro-body mt-4 text-sm leading-6">
+          Play the sheet at <strong className="text-white">{playbackFps.toFixed(3)} fps</strong>{' '}
           in-engine to match the original clip timing across {layout.totalFrames} sampled frames.
         </p>
       ) : null}
 
       {!layout.isValid ? (
-        <p className="mt-3 text-sm text-rose-300">{layout.validationMessage}</p>
+        <p className="mt-4 border-l-4 border-[var(--color-metro-red)] pl-3 text-sm text-rose-300">
+          {layout.validationMessage}
+        </p>
       ) : null}
 
       {config.sheetSize >= 4096 ? (
-        <p className="mt-3 text-sm text-amber-300">
+        <p className="mt-4 border-l-4 border-[var(--color-metro-orange)] pl-3 text-sm text-amber-300">
           {config.sheetSize} textures can be expensive in browser memory. Expect longer processing
           times.
         </p>
       ) : null}
 
       {requiresMoreFramesThanSource ? (
-        <p className="mt-3 text-sm text-amber-300">
+        <p className="mt-4 border-l-4 border-[var(--color-metro-orange)] pl-3 text-sm text-amber-300">
           This grid needs {layout.totalFrames} frames, but the source clip is estimated to contain only{' '}
           {sourceFrameCount} frames. The generated flipbook may repeat or undersample frames.
         </p>
       ) : null}
 
       {unstretchScaleLabel ? (
-        <p className="mt-3 text-sm text-slate-300/75">
+        <p className="metro-body mt-4 text-sm leading-6">
           Because frames are stretched into square cells, apply an in-engine unstretch scale of{' '}
-          <strong className="text-slate-100">{unstretchScaleLabel}</strong> to recover the original{' '}
+          <strong className="text-white">{unstretchScaleLabel}</strong> to recover the original{' '}
           {aspectRatioLabel} frame shape.
         </p>
       ) : null}

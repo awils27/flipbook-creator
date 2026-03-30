@@ -12,16 +12,18 @@ export function UploadField({ onFileSelect, disabled = false }: UploadFieldProps
   }
 
   return (
-    <label className="grid gap-2.5">
-      <span className="text-sm font-bold tracking-wide text-slate-100">Source video</span>
+    <label className="grid gap-3">
+      <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">
+        Source Video
+      </span>
       <input
         type="file"
         accept="video/*"
         onChange={handleChange}
         disabled={disabled}
-        className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 file:mr-4 file:rounded-full file:border-0 file:bg-amber-300/90 file:px-4 file:py-2 file:font-semibold file:text-slate-950 hover:file:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="metro-field text-sm text-white file:mr-4 file:border-0 file:bg-[var(--color-metro-cyan)] file:px-4 file:py-2 file:font-semibold file:uppercase file:tracking-[0.12em] file:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
       />
-      <span className="text-sm text-slate-300/70">
+      <span className="metro-body text-sm leading-6">
         Upload a single local video file to build a contact-sheet flipbook.
       </span>
     </label>

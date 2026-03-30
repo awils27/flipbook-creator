@@ -298,37 +298,71 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(44,138,101,0.36),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,157,52,0.18),transparent_30%),linear-gradient(180deg,#0a1717_0%,#102024_52%,#071013_100%)] px-4 py-8 font-['Trebuchet_MS','Lucida_Sans_Unicode','Segoe_UI',sans-serif] text-slate-100 antialiased sm:px-5">
-      <div className="mx-auto w-full max-w-[1320px]">
-        <section className="relative overflow-hidden rounded-[28px] border border-white/15 bg-[linear-gradient(135deg,rgba(24,38,41,0.95),rgba(9,18,20,0.9)),linear-gradient(90deg,rgba(196,211,86,0.12),rgba(37,117,98,0.16))] p-6 shadow-[0_26px_80px_rgba(0,0,0,0.35)] sm:p-10">
-          <div className="pointer-events-none absolute -right-[8%] -bottom-[42%] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(214,143,53,0.34),transparent_68%)]" />
-          <div className="relative z-10 max-w-[780px]">
-            <p className="mb-3 text-[0.82rem] uppercase tracking-[0.18em] text-lime-200">
-              Browser-based VFX texture tooling
-            </p>
-            <h1 className="text-[clamp(2.5rem,5vw,4.8rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-slate-50">
-              Flipbook sheets from video, without leaving the browser.
-            </h1>
-            <p className="mt-5 max-w-[640px] text-[1.05rem] text-slate-100/80">
-              Upload a clip, pick a power-of-two texture size and grid, then export a marginless PNG
-              contact sheet for engine-side flipbook playback.
-            </p>
+    <main className="min-h-screen px-4 py-6 antialiased sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1480px]">
+        <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+          <div className="metro-tile metro-tile-accent relative overflow-hidden p-6 sm:p-8">
+            <div className="absolute top-0 right-0 h-full w-[30%] bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0))]" />
+            <div className="relative z-10 max-w-[780px]">
+              <p className="metro-kicker">Browser-Based VFX Texture Tooling</p>
+              <h1 className="mt-4 text-[clamp(2.6rem,5vw,5rem)] leading-[0.88] font-light uppercase tracking-[0.02em] text-white">
+                Flipbook sheets
+                <br />
+                from moving footage
+              </h1>
+              <p className="mt-5 max-w-[640px] text-base leading-7 text-white/82 sm:text-lg">
+                Upload a clip, choose a texture sheet and a square grid, then export a local PNG
+                tile atlas tuned for engine-side flipbook playback.
+              </p>
+            </div>
           </div>
+
+          <section className="metro-tile metro-tile-dark flex flex-col justify-between gap-6 p-6">
+            <div>
+              <p className="metro-kicker">Pipeline</p>
+              <h2 className="metro-title mt-3 text-white">Fast Local Export</h2>
+              <p className="metro-body mt-4 text-sm leading-6">
+                The app stays fully client-side, so GitHub Pages hosting works and your source
+                media never leaves the browser.
+              </p>
+            </div>
+
+            <dl className="grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
+              <div className="metro-metric">
+                <dt>Input</dt>
+                <dd>{sourceFile ? sourceFile.name : 'Video clip'}</dd>
+              </div>
+              <div className="metro-metric">
+                <dt>Grid</dt>
+                <dd>
+                  {config.columns} x {config.rows}
+                </dd>
+              </div>
+              <div className="metro-metric">
+                <dt>Output</dt>
+                <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : 'Pending'}</dd>
+              </div>
+            </dl>
+          </section>
         </section>
 
-        <section className="mt-6 grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-          <div className="grid content-start gap-[22px]">
-            <section className="rounded-[22px] border border-white/15 bg-slate-950/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-slate-50">Upload</h2>
-                <p className="mt-2 text-sm text-slate-300/70">
-                  Everything runs locally. GitHub Pages hosting stays viable because there is no backend.
+        <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(320px,0.9fr)]">
+          <div className="grid content-start gap-5">
+            <section className="metro-tile p-6">
+              <div className="mb-5">
+                <p className="metro-kicker">Step 01</p>
+                <h2 className="metro-title mt-2">Load Source</h2>
+                <p className="metro-body mt-3 text-sm leading-6">
+                  Select a single local video and inspect its metadata before extraction starts.
                 </p>
               </div>
               <UploadField onFileSelect={handleFileSelect} disabled={isGenerating} />
             </section>
 
             <SourceInfoPanel sourceInfo={sourceInfo} />
+          </div>
+
+          <div className="grid content-start gap-5">
             <ConfigPanel
               config={config}
               layout={layout}
@@ -340,10 +374,18 @@ export default function App() {
               onChange={setConfig}
             />
 
-            <div className="flex justify-start">
+            <section className="metro-tile metro-tile-dark flex flex-col gap-5 p-6">
+              <div>
+                <p className="metro-kicker">Step 03</p>
+                <h2 className="metro-title mt-2">Build Sheet</h2>
+                <p className="metro-body mt-3 text-sm leading-6">
+                  Generate a marginless PNG contact sheet from evenly sampled frames.
+                </p>
+              </div>
+
               <button
                 type="button"
-                className="min-h-[52px] rounded-full bg-linear-to-br from-amber-300 to-orange-400 px-6 py-3.5 text-sm font-extrabold tracking-[0.01em] text-slate-950 shadow-[0_12px_32px_rgba(235,146,80,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                className="metro-button w-full sm:w-auto"
                 disabled={
                   !sourceFile ||
                   !sourceInfo?.durationSeconds ||
@@ -354,15 +396,15 @@ export default function App() {
                 onClick={handleGenerate}
               >
                 {isInspectingSource
-                  ? 'Inspecting Source...'
+                  ? 'Inspecting Source'
                   : isGenerating
-                    ? 'Generating...'
+                    ? 'Generating'
                     : 'Generate Flipbook'}
               </button>
-            </div>
+            </section>
           </div>
 
-          <div className="grid content-start gap-[22px]">
+          <div className="grid content-start gap-5">
             <ProgressPanel progress={progress} error={error} logLines={logLines} />
             <PreviewPanel
               result={result}
