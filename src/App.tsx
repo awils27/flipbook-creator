@@ -119,9 +119,14 @@ export default function App() {
 
       try {
         const frameInfo = await probeVideoFrameInfo(file);
+        const estimatedFrameCount =
+          metadata.durationSeconds !== null && frameInfo.frameRate !== null
+            ? Math.max(1, Math.round(metadata.durationSeconds * frameInfo.frameRate))
+            : null;
+
         setSourceInfo({
           ...metadata,
-          frameCount: frameInfo.frameCount,
+          frameCount: estimatedFrameCount,
           frameRate: frameInfo.frameRate,
         });
       } catch {

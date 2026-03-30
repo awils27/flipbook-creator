@@ -74,11 +74,10 @@ export async function probeVideoFrameInfo(file: File): Promise<{
     const exitCode = await ffmpeg.ffprobe([
       '-v',
       'error',
-      '-count_frames',
       '-select_streams',
       'v:0',
       '-show_entries',
-      'stream=avg_frame_rate,nb_read_frames,nb_frames',
+      'stream=avg_frame_rate',
       '-of',
       'default=noprint_wrappers=1',
       inputName,
@@ -95,7 +94,7 @@ export async function probeVideoFrameInfo(file: File): Promise<{
     const parsed = parseProbeOutput(text);
 
     return {
-      frameCount: parsed.frameCount,
+      frameCount: null,
       frameRate: parsed.frameRate,
     };
   } finally {
@@ -204,7 +203,7 @@ function getFileExtension(fileName: string): string {
   return match?.[0] ?? '';
 }
 
-function parseProbeOutput(text: string): { frameCount: number | null; frameRate: number | null } {
+function parseProbeOutput(text: string): { frameRate: number | null } {
   const values = new Map<string, string>();
 
   for (const line of text.split(/\r?\n/)) {
@@ -216,23 +215,11 @@ function parseProbeOutput(text: string): { frameCount: number | null; frameRate:
     values.set(key.trim(), value.trim());
   }
 
-  const nbReadFrames = parseNullableInteger(values.get('nb_read_frames'));
-  const nbFrames = parseNullableInteger(values.get('nb_frames'));
   const frameRate = parseFrameRate(values.get('avg_frame_rate'));
 
   return {
-    frameCount: nbReadFrames ?? nbFrames,
     frameRate,
   };
-}
-
-function parseNullableInteger(value: string | undefined): number | null {
-  if (!value || value === 'N/A') {
-    return null;
-  }
-
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function parseFrameRate(value: string | undefined): number | null {

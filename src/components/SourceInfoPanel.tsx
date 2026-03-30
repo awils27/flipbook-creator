@@ -44,9 +44,15 @@ export function SourceInfoPanel({ sourceInfo }: SourceInfoPanelProps) {
             </dd>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
-            <dt className="text-xs text-slate-300/55">Source frames</dt>
+            <dt className="text-xs text-slate-300/55">Estimated frames</dt>
             <dd className="mt-1.5 text-sm font-semibold text-slate-100">
               {sourceInfo.frameCount ?? 'Unknown'}
+            </dd>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+            <dt className="text-xs text-slate-300/55">Source FPS</dt>
+            <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+              {sourceInfo.frameRate ? sourceInfo.frameRate.toFixed(3) : 'Unknown'}
             </dd>
           </div>
         </dl>

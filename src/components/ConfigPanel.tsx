@@ -177,7 +177,7 @@ export function ConfigPanel({
 
       {requiresMoreFramesThanSource ? (
         <p className="mt-3 text-sm text-amber-300">
-          This grid needs {layout.totalFrames} frames, but the source clip appears to contain only{' '}
+          This grid needs {layout.totalFrames} frames, but the source clip is estimated to contain only{' '}
           {sourceFrameCount} frames. The generated flipbook may repeat or undersample frames.
         </p>
       ) : null}
