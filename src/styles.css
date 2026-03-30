@@ -82,6 +82,23 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
+  select.metro-field {
+    color: var(--color-metro-text);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+      var(--color-metro-surface);
+  }
+
+  select.metro-field option {
+    color: #111827;
+    background: #f3f4f6;
+  }
+
+  select.metro-field option:checked {
+    color: var(--color-metro-text);
+    background: var(--color-metro-blue);
+  }
+
   .metro-field:focus {
     border-color: var(--color-metro-cyan);
     box-shadow: inset 0 0 0 1px var(--color-metro-cyan);
