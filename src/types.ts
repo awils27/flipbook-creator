@@ -16,6 +16,8 @@ export type SourceVideoInfo = {
   width: number | null;
   height: number | null;
   mimeType: string;
+  frameCount: number | null;
+  frameRate: number | null;
 };
 
 export type DerivedLayout = {

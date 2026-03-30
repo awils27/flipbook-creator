@@ -5,7 +5,13 @@ import { ProgressPanel } from './components/ProgressPanel';
 import { SourceInfoPanel } from './components/SourceInfoPanel';
 import { UploadField } from './components/UploadField';
 import { createFlipbookComposer } from './lib/composite';
-import { ensureFfmpegLoaded, extractFrames, resetFfmpeg, setFfmpegEventHandlers } from './lib/ffmpeg';
+import {
+  ensureFfmpegLoaded,
+  extractFrames,
+  probeVideoFrameInfo,
+  resetFfmpeg,
+  setFfmpegEventHandlers,
+} from './lib/ffmpeg';
 import { createOutputFileName, downloadBlob } from './lib/file';
 import { buildSamplingTimestamps, deriveLayout, getValidGridOptions } from './lib/layout';
 import { readSourceVideoInfo } from './lib/video';
@@ -15,7 +21,7 @@ const DEFAULT_CONFIG: FlipbookConfig = {
   sheetSize: 1024,
   columns: 8,
   rows: 8,
-  fitMode: 'contain',
+  fitMode: 'stretch',
 };
 
 const IDLE_PROGRESS: ProgressState = {
@@ -102,6 +108,26 @@ export default function App() {
       });
       const metadata = await readSourceVideoInfo(file);
       setSourceInfo(metadata);
+
+      setProgress({
+        phase: 'loading-engine',
+        message: 'Inspecting source frame count...',
+        current: 0,
+        total: 0,
+        indeterminate: true,
+      });
+
+      try {
+        const frameInfo = await probeVideoFrameInfo(file);
+        setSourceInfo({
+          ...metadata,
+          frameCount: frameInfo.frameCount,
+          frameRate: frameInfo.frameRate,
+        });
+      } catch {
+        setSourceInfo(metadata);
+      }
+
       setProgress(IDLE_PROGRESS);
     } catch (metadataError) {
       setError(
@@ -267,58 +293,70 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="hero">
-        <div className="hero__copy">
-          <p className="eyebrow">Browser-based VFX texture tooling</p>
-          <h1>Flipbook sheets from video, without leaving the browser.</h1>
-          <p className="hero__lede">
-            Upload a clip, pick a power-of-two texture size and grid, then export a marginless PNG
-            contact sheet for engine-side flipbook playback.
-          </p>
-        </div>
-      </section>
-
-      <section className="workspace">
-        <div className="workspace__left">
-          <section className="panel">
-            <div className="panel__header">
-              <h2>Upload</h2>
-              <p>Everything runs locally. GitHub Pages hosting stays viable because there is no backend.</p>
-            </div>
-            <UploadField onFileSelect={handleFileSelect} disabled={isGenerating} />
-          </section>
-
-          <SourceInfoPanel sourceInfo={sourceInfo} />
-          <ConfigPanel
-            config={config}
-            layout={layout}
-            sourceDurationSeconds={sourceInfo?.durationSeconds ?? null}
-            disabled={isGenerating}
-            onChange={setConfig}
-          />
-
-          <div className="action-row">
-            <button
-              type="button"
-              className="primary-button"
-              disabled={!sourceFile || !sourceInfo?.durationSeconds || !layout.isValid || isGenerating}
-              onClick={handleGenerate}
-            >
-              {isGenerating ? 'Generating...' : 'Generate Flipbook'}
-            </button>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(44,138,101,0.36),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,157,52,0.18),transparent_30%),linear-gradient(180deg,#0a1717_0%,#102024_52%,#071013_100%)] px-4 py-8 font-['Trebuchet_MS','Lucida_Sans_Unicode','Segoe_UI',sans-serif] text-slate-100 antialiased sm:px-5">
+      <div className="mx-auto w-full max-w-[1320px]">
+        <section className="relative overflow-hidden rounded-[28px] border border-white/15 bg-[linear-gradient(135deg,rgba(24,38,41,0.95),rgba(9,18,20,0.9)),linear-gradient(90deg,rgba(196,211,86,0.12),rgba(37,117,98,0.16))] p-6 shadow-[0_26px_80px_rgba(0,0,0,0.35)] sm:p-10">
+          <div className="pointer-events-none absolute -right-[8%] -bottom-[42%] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(214,143,53,0.34),transparent_68%)]" />
+          <div className="relative z-10 max-w-[780px]">
+            <p className="mb-3 text-[0.82rem] uppercase tracking-[0.18em] text-lime-200">
+              Browser-based VFX texture tooling
+            </p>
+            <h1 className="text-[clamp(2.5rem,5vw,4.8rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-slate-50">
+              Flipbook sheets from video, without leaving the browser.
+            </h1>
+            <p className="mt-5 max-w-[640px] text-[1.05rem] text-slate-100/80">
+              Upload a clip, pick a power-of-two texture size and grid, then export a marginless PNG
+              contact sheet for engine-side flipbook playback.
+            </p>
           </div>
-        </div>
+        </section>
 
-        <div className="workspace__right">
-          <ProgressPanel progress={progress} error={error} logLines={logLines} />
-          <PreviewPanel
-            result={result}
-            downloadFileName={downloadFileName}
-            onDownload={handleDownload}
-          />
-        </div>
-      </section>
+        <section className="mt-6 grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+          <div className="grid content-start gap-[22px]">
+            <section className="rounded-[22px] border border-white/15 bg-slate-950/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-slate-50">Upload</h2>
+                <p className="mt-2 text-sm text-slate-300/70">
+                  Everything runs locally. GitHub Pages hosting stays viable because there is no backend.
+                </p>
+              </div>
+              <UploadField onFileSelect={handleFileSelect} disabled={isGenerating} />
+            </section>
+
+            <SourceInfoPanel sourceInfo={sourceInfo} />
+            <ConfigPanel
+              config={config}
+              layout={layout}
+              sourceDurationSeconds={sourceInfo?.durationSeconds ?? null}
+              sourceFrameCount={sourceInfo?.frameCount ?? null}
+              sourceWidth={sourceInfo?.width ?? null}
+              sourceHeight={sourceInfo?.height ?? null}
+              disabled={isGenerating}
+              onChange={setConfig}
+            />
+
+            <div className="flex justify-start">
+              <button
+                type="button"
+                className="min-h-[52px] rounded-full bg-linear-to-br from-amber-300 to-orange-400 px-6 py-3.5 text-sm font-extrabold tracking-[0.01em] text-slate-950 shadow-[0_12px_32px_rgba(235,146,80,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                disabled={!sourceFile || !sourceInfo?.durationSeconds || !layout.isValid || isGenerating}
+                onClick={handleGenerate}
+              >
+                {isGenerating ? 'Generating...' : 'Generate Flipbook'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid content-start gap-[22px]">
+            <ProgressPanel progress={progress} error={error} logLines={logLines} />
+            <PreviewPanel
+              result={result}
+              downloadFileName={downloadFileName}
+              onDownload={handleDownload}
+            />
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

@@ -7,6 +7,9 @@ type ConfigPanelProps = {
   config: FlipbookConfig;
   layout: DerivedLayout;
   sourceDurationSeconds: number | null;
+  sourceFrameCount: number | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
   disabled?: boolean;
   onChange: (config: FlipbookConfig) => void;
 };
@@ -15,6 +18,9 @@ export function ConfigPanel({
   config,
   layout,
   sourceDurationSeconds,
+  sourceFrameCount,
+  sourceWidth,
+  sourceHeight,
   disabled = false,
   onChange,
 }: ConfigPanelProps) {
@@ -24,20 +30,37 @@ export function ConfigPanel({
     layout.isValid && sourceDurationSeconds && sourceDurationSeconds > 0
       ? layout.totalFrames / sourceDurationSeconds
       : null;
+  const requiresMoreFramesThanSource =
+    layout.isValid && sourceFrameCount !== null && layout.totalFrames > sourceFrameCount;
+  const sourceAspectRatio =
+    sourceWidth && sourceHeight && sourceWidth > 0 && sourceHeight > 0 ? sourceWidth / sourceHeight : null;
+  const aspectRatioLabel =
+    sourceWidth && sourceHeight && sourceWidth > 0 && sourceHeight > 0
+      ? formatAspectRatio(sourceWidth, sourceHeight)
+      : null;
+  const unstretchScaleLabel =
+    config.fitMode === 'stretch' && sourceAspectRatio
+      ? sourceAspectRatio >= 1
+        ? `X ${sourceAspectRatio.toFixed(3)}, Y 1.000`
+        : `X 1.000, Y ${(1 / sourceAspectRatio).toFixed(3)}`
+      : null;
 
   return (
-    <section className="panel">
-      <div className="panel__header">
-        <h2>Flipbook setup</h2>
-        <p>Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.</p>
+    <section className="rounded-[22px] border border-white/15 bg-slate-950/70 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-slate-50">Flipbook setup</h2>
+        <p className="mt-2 text-sm text-slate-300/70">
+          Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.
+        </p>
       </div>
 
-      <div className="form-grid">
-        <label>
-          <span>Sheet size</span>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="grid gap-2">
+          <span className="text-sm font-bold tracking-wide text-slate-100">Sheet size</span>
           <select
             value={config.sheetSize}
             disabled={disabled}
+            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -53,11 +76,12 @@ export function ConfigPanel({
           </select>
         </label>
 
-        <label>
-          <span>Grid</span>
+        <label className="grid gap-2">
+          <span className="text-sm font-bold tracking-wide text-slate-100">Grid</span>
           <select
             value={selectedGridValue}
             disabled={disabled}
+            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) => {
               const [columns, rows] = event.target.value.split('x').map(Number);
               onChange({
@@ -78,11 +102,12 @@ export function ConfigPanel({
           </select>
         </label>
 
-        <label>
-          <span>Fit mode</span>
+        <label className="grid gap-2">
+          <span className="text-sm font-bold tracking-wide text-slate-100">Fit mode</span>
           <select
             value={config.fitMode}
             disabled={disabled}
+            className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -96,47 +121,94 @@ export function ConfigPanel({
         </label>
       </div>
 
-      <dl className="stats-grid">
-        <div>
-          <dt>Grid</dt>
-          <dd>
+      <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Grid</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
             {config.columns} x {config.rows}
           </dd>
         </div>
-        <div>
-          <dt>Total frames</dt>
-          <dd>{layout.totalFrames || '-'}</dd>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Total frames</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">{layout.totalFrames || '-'}</dd>
         </div>
-        <div>
-          <dt>Cell size</dt>
-          <dd>{layout.cellSize ? `${layout.cellSize}px` : '-'}</dd>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Cell size</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+            {layout.cellSize ? `${layout.cellSize}px` : '-'}
+          </dd>
         </div>
-        <div>
-          <dt>Output size</dt>
-          <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}</dd>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Output size</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+            {layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}
+          </dd>
         </div>
-        <div>
-          <dt>Playback FPS</dt>
-          <dd>{playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}</dd>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Playback FPS</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+            {playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}
+          </dd>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5">
+          <dt className="text-xs text-slate-300/55">Source aspect</dt>
+          <dd className="mt-1.5 text-sm font-semibold text-slate-100">
+            {aspectRatioLabel ?? '-'}
+          </dd>
         </div>
       </dl>
 
       {playbackFps ? (
-        <p className="status-message">
-          Play the sheet at <strong>{playbackFps.toFixed(3)} fps</strong> in-engine to match the
-          original clip timing across {layout.totalFrames} sampled frames.
+        <p className="mt-3 text-sm text-slate-300/75">
+          Play the sheet at <strong className="text-slate-100">{playbackFps.toFixed(3)} fps</strong>{' '}
+          in-engine to match the original clip timing across {layout.totalFrames} sampled frames.
         </p>
       ) : null}
 
       {!layout.isValid ? (
-        <p className="status-message status-message--error">{layout.validationMessage}</p>
+        <p className="mt-3 text-sm text-rose-300">{layout.validationMessage}</p>
       ) : null}
 
       {config.sheetSize === 4096 ? (
-        <p className="status-message status-message--warning">
+        <p className="mt-3 text-sm text-amber-300">
           4096 textures can be expensive in browser memory. Expect longer processing times.
+        </p>
+      ) : null}
+
+      {requiresMoreFramesThanSource ? (
+        <p className="mt-3 text-sm text-amber-300">
+          This grid needs {layout.totalFrames} frames, but the source clip appears to contain only{' '}
+          {sourceFrameCount} frames. The generated flipbook may repeat or undersample frames.
+        </p>
+      ) : null}
+
+      {unstretchScaleLabel ? (
+        <p className="mt-3 text-sm text-slate-300/75">
+          Because frames are stretched into square cells, apply an in-engine unstretch scale of{' '}
+          <strong className="text-slate-100">{unstretchScaleLabel}</strong> to recover the original{' '}
+          {aspectRatioLabel} frame shape.
         </p>
       ) : null}
     </section>
   );
+}
+
+function formatAspectRatio(width: number, height: number): string {
+  const divisor = greatestCommonDivisor(width, height);
+  const reducedWidth = Math.round(width / divisor);
+  const reducedHeight = Math.round(height / divisor);
+  return `${reducedWidth}:${reducedHeight}`;
+}
+
+function greatestCommonDivisor(a: number, b: number): number {
+  let x = Math.abs(Math.round(a));
+  let y = Math.abs(Math.round(b));
+
+  while (y !== 0) {
+    const temp = y;
+    y = x % y;
+    x = temp;
+  }
+
+  return x || 1;
 }

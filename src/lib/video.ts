@@ -32,6 +32,8 @@ export async function readSourceVideoInfo(file: File): Promise<SourceVideoInfo> 
       width: metadata.width || null,
       height: metadata.height || null,
       mimeType: file.type,
+      frameCount: null,
+      frameRate: null,
     };
   } finally {
     URL.revokeObjectURL(objectUrl);
