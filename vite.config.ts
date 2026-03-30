@@ -2,10 +2,8 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 
-const repositoryName = 'flipbook-creator';
-
 export default defineConfig({
-  base: `/${repositoryName}/`,
+  base: './',
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'jsdom',
