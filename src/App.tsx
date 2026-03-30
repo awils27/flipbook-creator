@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConfigPanel } from './components/ConfigPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { ProgressPanel } from './components/ProgressPanel';
@@ -42,6 +42,7 @@ export default function App() {
   const [isInspectingSource, setIsInspectingSource] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [logLines, setLogLines] = useState<string[]>([]);
+  const sourceInspectionRequestId = useRef(0);
 
   const layout = useMemo(() => deriveLayout(config), [config]);
   const downloadFileName = sourceFile ? createOutputFileName(sourceFile.name, config) : null;
@@ -80,6 +81,9 @@ export default function App() {
   }, [config.sheetSize, config.columns, config.rows]);
 
   async function handleFileSelect(file: File | null) {
+    const requestId = sourceInspectionRequestId.current + 1;
+    sourceInspectionRequestId.current = requestId;
+
     setError(null);
     setSourceFile(file);
     setSourceInfo(null);
@@ -115,6 +119,10 @@ export default function App() {
           ? Math.max(1, Math.round(metadata.durationSeconds * DEFAULT_ESTIMATED_SOURCE_FPS))
           : null;
 
+      if (sourceInspectionRequestId.current !== requestId) {
+        return;
+      }
+
       setSourceInfo({
         ...metadata,
         frameCount: estimatedFrameCount,
@@ -123,6 +131,10 @@ export default function App() {
 
       setProgress(IDLE_PROGRESS);
     } catch (metadataError) {
+      if (sourceInspectionRequestId.current !== requestId) {
+        return;
+      }
+
       setError(
         metadataError instanceof Error ? metadataError.message : 'Unable to inspect the selected video.',
       );
@@ -133,7 +145,9 @@ export default function App() {
         total: 0,
       });
     } finally {
-      setIsInspectingSource(false);
+      if (sourceInspectionRequestId.current === requestId) {
+        setIsInspectingSource(false);
+      }
     }
   }
 
@@ -165,10 +179,6 @@ export default function App() {
           setLogLines((current) => [...current.slice(-24), trimmed]);
         },
         onProgress: (event) => {
-          if (progress.phase !== 'extracting-frames') {
-            return;
-          }
-
           setProgress((current) => {
             if (current.phase !== 'extracting-frames' || current.total === 0) {
               return current;

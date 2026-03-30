@@ -94,11 +94,16 @@ export async function extractFrames(
 
   await ffmpeg.writeFile(inputName, await fetchFile(file));
 
+  const generatedFrameNames = timestamps.map(
+    (_, index) => `frame-${index.toString().padStart(5, '0')}.png`,
+  );
+
   try {
     const outputFrames: Blob[] = [];
     const framePattern = 'frame-%05d.png';
     const filter = buildBatchFilter(timestamps, layout.cellSize, config.fitMode);
     const exitCode = await ffmpeg.exec([
+      '-y',
       '-i',
       inputName,
       '-map',
@@ -121,8 +126,7 @@ export async function extractFrames(
       throw new Error(`FFmpeg failed to extract ${timestamps.length} frames (exit code ${exitCode}).`);
     }
 
-    for (const [index] of timestamps.entries()) {
-      const frameName = `frame-${index.toString().padStart(5, '0')}.png`;
+    for (const [index, frameName] of generatedFrameNames.entries()) {
       const data = await ffmpeg.readFile(frameName);
 
       if (!(data instanceof Uint8Array)) {
@@ -143,6 +147,7 @@ export async function extractFrames(
 
     return outputFrames;
   } finally {
+    await Promise.all(generatedFrameNames.map((frameName) => safeDelete(ffmpeg, frameName)));
     await safeDelete(ffmpeg, inputName);
   }
 }
