@@ -4,6 +4,7 @@ import classWorkerURL from '@ffmpeg/ffmpeg/worker?url';
 import coreURL from '@ffmpeg/core?url';
 import wasmURL from '@ffmpeg/core/wasm?url';
 import type { FlipbookConfig } from '../types';
+import { buildBatchFilter } from './ffmpeg-filter';
 import { deriveLayout } from './layout';
 
 type FfmpegLogEvent = {
@@ -165,33 +166,3 @@ function getFileExtension(fileName: string): string {
   return match?.[0] ?? '';
 }
 
-function buildFrameFilter(cellSize: number, fitMode: FlipbookConfig['fitMode']): string {
-  if (fitMode === 'stretch') {
-    return `scale=${cellSize}:${cellSize}:flags=lanczos`;
-  }
-
-  return [
-    `scale=${cellSize}:${cellSize}:force_original_aspect_ratio=decrease:flags=lanczos`,
-    `pad=${cellSize}:${cellSize}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
-  ].join(',');
-}
-
-function buildBatchFilter(
-  timestamps: number[],
-  cellSize: number,
-  fitMode: FlipbookConfig['fitMode'],
-): string {
-  if (timestamps.length === 0) {
-    throw new Error('At least one timestamp is required.');
-  }
-
-  const intervalSeconds =
-    timestamps.length > 1 ? timestamps[1] - timestamps[0] : Math.max(timestamps[0] * 2, 0.001);
-  const firstSampleSeconds = Math.max(intervalSeconds / 2, 0);
-  const fps = 1 / Math.max(intervalSeconds, 0.001);
-
-  return [
-    `fps=${fps}:start_time=${firstSampleSeconds}:round=near`,
-    buildFrameFilter(cellSize, fitMode),
-  ].join(',');
-}
