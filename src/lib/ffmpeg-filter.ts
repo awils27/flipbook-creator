@@ -39,5 +39,5 @@ export function buildBatchFilter(
 }
 
 function buildDisplayAspectCorrectionFilter(): string {
-  return "scale='max(1,trunc(iw*sar))':ih:flags=lanczos,setsar=1";
+  return "scale='max(1,trunc(ih*dar))':ih:flags=lanczos,setsar=1";
 }

@@ -5,7 +5,7 @@ describe('buildFrameFilter', () => {
   it('normalizes sample aspect ratio before stretching into the target cell', () => {
     const filter = buildFrameFilter(128, 'stretch');
 
-    expect(filter).toContain("scale='max(1,trunc(iw*sar))':ih:flags=lanczos");
+    expect(filter).toContain("scale='max(1,trunc(ih*dar))':ih:flags=lanczos");
     expect(filter).toContain('setsar=1');
     expect(filter).toContain('scale=128:128:flags=lanczos');
   });
@@ -13,7 +13,7 @@ describe('buildFrameFilter', () => {
   it('keeps contain mode padding after display-aspect correction', () => {
     const filter = buildFrameFilter(128, 'contain');
 
-    expect(filter).toContain("scale='max(1,trunc(iw*sar))':ih:flags=lanczos");
+    expect(filter).toContain("scale='max(1,trunc(ih*dar))':ih:flags=lanczos");
     expect(filter).toContain('setsar=1');
     expect(filter).toContain('force_original_aspect_ratio=decrease');
     expect(filter).toContain('pad=128:128:(ow-iw)/2:(oh-ih)/2:color=0x00000000');
