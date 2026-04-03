@@ -46,24 +46,18 @@ export function ConfigPanel({
       : null;
 
   return (
-    <section className="metro-tile p-6">
-      <div className="mb-5">
-        <p className="metro-kicker">Step 02</p>
-        <h2 className="metro-title mt-2">Tile Configuration</h2>
-        <p className="metro-body mt-3 text-sm leading-6">
-          Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.
-        </p>
-      </div>
+    <article>
+      <h3>Tile configuration</h3>
+      <p>
+        Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.
+      </p>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="grid gap-2">
-          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">
-            Sheet Size
-          </span>
+      <div className="form-grid">
+        <label>
+          <span>Sheet size</span>
           <select
             value={config.sheetSize}
             disabled={disabled}
-            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -79,12 +73,11 @@ export function ConfigPanel({
           </select>
         </label>
 
-        <label className="grid gap-2">
-          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">Grid</span>
+        <label>
+          <span>Grid</span>
           <select
             value={selectedGridValue}
             disabled={disabled}
-            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) => {
               const [columns, rows] = event.target.value.split('x').map(Number);
               onChange({
@@ -105,14 +98,11 @@ export function ConfigPanel({
           </select>
         </label>
 
-        <label className="grid gap-2">
-          <span className="text-sm font-semibold uppercase tracking-[0.16em] text-white/88">
-            Fit Mode
-          </span>
+        <label>
+          <span>Fit mode</span>
           <select
             value={config.fitMode}
             disabled={disabled}
-            className="metro-field text-white disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(event) =>
               onChange({
                 ...config,
@@ -126,70 +116,66 @@ export function ConfigPanel({
         </label>
       </div>
 
-      <dl className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="metro-metric">
+      <dl className="definition-grid">
+        <div className="definition-card">
           <dt>Grid</dt>
           <dd>
             {config.columns} x {config.rows}
           </dd>
         </div>
-        <div className="metro-metric">
+        <div className="definition-card">
           <dt>Total Frames</dt>
           <dd>{layout.totalFrames || '-'}</dd>
         </div>
-        <div className="metro-metric">
+        <div className="definition-card">
           <dt>Cell Size</dt>
           <dd>{layout.cellSize ? `${layout.cellSize}px` : '-'}</dd>
         </div>
-        <div className="metro-metric">
+        <div className="definition-card">
           <dt>Output Size</dt>
           <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : '-'}</dd>
         </div>
-        <div className="metro-metric">
+        <div className="definition-card">
           <dt>Playback Fps</dt>
           <dd>{playbackFps ? `${playbackFps.toFixed(3)} fps` : '-'}</dd>
         </div>
-        <div className="metro-metric">
+        <div className="definition-card">
           <dt>Source Aspect</dt>
           <dd>{aspectRatioLabel ?? '-'}</dd>
         </div>
       </dl>
 
       {playbackFps ? (
-        <p className="metro-body mt-4 text-sm leading-6">
-          Play the sheet at <strong className="text-white">{playbackFps.toFixed(3)} fps</strong>{' '}
-          in-engine to match the original clip timing across {layout.totalFrames} sampled frames.
+        <p className="section-note">
+          Play the sheet at <strong>{playbackFps.toFixed(3)} fps</strong> in-engine to match the
+          original clip timing across {layout.totalFrames} sampled frames.
         </p>
       ) : null}
 
-      {!layout.isValid ? (
-        <p className="mt-4 border-l-4 border-[var(--color-metro-red)] pl-3 text-sm text-rose-300">
-          {layout.validationMessage}
-        </p>
-      ) : null}
+      {!layout.isValid ? <p className="callout error">{layout.validationMessage}</p> : null}
 
       {config.sheetSize >= 4096 ? (
-        <p className="mt-4 border-l-4 border-[var(--color-metro-orange)] pl-3 text-sm text-amber-300">
+        <p className="callout warning">
           {config.sheetSize} textures can be expensive in browser memory. Expect longer processing
           times.
         </p>
       ) : null}
 
       {requiresMoreFramesThanSource ? (
-        <p className="mt-4 border-l-4 border-[var(--color-metro-orange)] pl-3 text-sm text-amber-300">
+        <p className="callout warning">
           This grid needs {layout.totalFrames} frames, but the source clip is estimated to contain only{' '}
           {sourceFrameCount} frames. The generated flipbook may repeat or undersample frames.
         </p>
       ) : null}
 
       {unstretchScaleLabel ? (
-        <p className="metro-body mt-4 text-sm leading-6">
+        <p className="section-note">
           Because frames are stretched into square cells, apply an in-engine unstretch scale of{' '}
-          <strong className="text-white">{unstretchScaleLabel}</strong> to recover the original{' '}
-          {aspectRatioLabel} frame shape.
+          <strong>{unstretchScaleLabel}</strong> to recover the original {aspectRatioLabel} frame
+          shape.
         </p>
       ) : null}
-    </section>
+    </article>
   );
 }
 

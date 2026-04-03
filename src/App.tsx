@@ -43,6 +43,10 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [logLines, setLogLines] = useState<string[]>([]);
   const sourceInspectionRequestId = useRef(0);
+  const configSectionRef = useRef<HTMLElement | null>(null);
+  const previewSectionRef = useRef<HTMLElement | null>(null);
+  const hasAutoScrolledToConfigRef = useRef(false);
+  const hasAutoScrolledToPreviewRef = useRef(false);
 
   const layout = useMemo(() => deriveLayout(config), [config]);
   const downloadFileName = sourceFile ? createOutputFileName(sourceFile.name, config) : null;
@@ -79,6 +83,31 @@ export default function App() {
       rows: fallbackOption.rows,
     }));
   }, [config.sheetSize, config.columns, config.rows]);
+
+  useEffect(() => {
+    if (!sourceFile) {
+      hasAutoScrolledToConfigRef.current = false;
+      hasAutoScrolledToPreviewRef.current = false;
+    }
+  }, [sourceFile]);
+
+  useEffect(() => {
+    if (!sourceInfo || isInspectingSource || hasAutoScrolledToConfigRef.current) {
+      return;
+    }
+
+    hasAutoScrolledToConfigRef.current = true;
+    scrollToSection(configSectionRef.current);
+  }, [sourceInfo, isInspectingSource]);
+
+  useEffect(() => {
+    if (!result || hasAutoScrolledToPreviewRef.current) {
+      return;
+    }
+
+    hasAutoScrolledToPreviewRef.current = true;
+    scrollToSection(previewSectionRef.current);
+  }, [result]);
 
   async function handleFileSelect(file: File | null) {
     const requestId = sourceInspectionRequestId.current + 1;
@@ -298,122 +327,111 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 antialiased sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-[1480px]">
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-          <div className="metro-tile metro-tile-accent relative overflow-hidden p-6 sm:p-8">
-            <div className="absolute top-0 right-0 h-full w-[30%] bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0))]" />
-            <div className="relative z-10 max-w-[780px]">
-              <p className="metro-kicker">Browser-Based VFX Texture Tooling</p>
-              <h1 className="mt-4 text-[clamp(2.6rem,5vw,5rem)] leading-[0.88] font-light uppercase tracking-[0.02em] text-white">
-                Flipbook sheets
-                <br />
-                from moving footage
-              </h1>
-              <p className="mt-5 max-w-[640px] text-base leading-7 text-white/82 sm:text-lg">
-                Upload a clip, choose a texture sheet and a square grid, then export a local PNG
-                tile atlas tuned for engine-side flipbook playback.
-              </p>
+    <main className="container">
+      <header>
+        <h2>Flipbook to PNG</h2>
+        <p className="muted">Front-end only flipbook sheet generation</p>
+      </header>
+
+      <article>
+        <div className="grid">
+          <div className="hero-preview" aria-hidden="true">
+            <div className="hero-preview-frame">
+              <div className="hero-preview-grid">
+                {Array.from({ length: 16 }).map((_, index) => (
+                  <span key={index} className="hero-preview-cell" />
+                ))}
+              </div>
             </div>
           </div>
 
-          <section className="metro-tile metro-tile-dark flex flex-col justify-between gap-6 p-6">
-            <div>
-              <p className="metro-kicker">Pipeline</p>
-              <h2 className="metro-title mt-3 text-white">Fast Local Export</h2>
-              <p className="metro-body mt-4 text-sm leading-6">
-                The app stays fully client-side, so GitHub Pages hosting works and your source
-                media never leaves the browser.
-              </p>
-            </div>
+          <div>
+            <h3>Generate a flipbook texture sheet</h3>
+            <p>
+              Select a local video, choose the atlas size and grid, then export a PNG sheet for
+              engine-side playback. Everything stays in the browser.
+            </p>
+            <p>
+              Large source clips and very high sheet sizes can still hit browser memory limits, so
+              the status panel will surface FFmpeg progress and errors as the job runs.
+            </p>
+          </div>
+        </div>
+      </article>
 
-            <dl className="grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
-              <div className="metro-metric">
-                <dt>Input</dt>
-                <dd>{sourceFile ? sourceFile.name : 'Video clip'}</dd>
-              </div>
-              <div className="metro-metric">
-                <dt>Grid</dt>
-                <dd>
-                  {config.columns} x {config.rows}
-                </dd>
-              </div>
-              <div className="metro-metric">
-                <dt>Output</dt>
-                <dd>{layout.isValid ? `${layout.outputWidth} x ${layout.outputHeight}` : 'Pending'}</dd>
-              </div>
-            </dl>
-          </section>
+      <article>
+        <h3>Source video</h3>
+        <label htmlFor="source-video-upload">Choose a video file</label>
+        <UploadField
+          inputId="source-video-upload"
+          onFileSelect={handleFileSelect}
+          disabled={isGenerating}
+        />
+      </article>
+
+      <section className="stack">
+        <SourceInfoPanel sourceInfo={sourceInfo} />
+
+        <section ref={configSectionRef}>
+          <ConfigPanel
+            config={config}
+            layout={layout}
+            sourceDurationSeconds={sourceInfo?.durationSeconds ?? null}
+            sourceFrameCount={sourceInfo?.frameCount ?? null}
+            sourceWidth={sourceInfo?.width ?? null}
+            sourceHeight={sourceInfo?.height ?? null}
+            disabled={isGenerating}
+            onChange={setConfig}
+          />
         </section>
 
-        <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(320px,0.9fr)]">
-          <div className="grid content-start gap-5">
-            <section className="metro-tile p-6">
-              <div className="mb-5">
-                <p className="metro-kicker">Step 01</p>
-                <h2 className="metro-title mt-2">Load Source</h2>
-                <p className="metro-body mt-3 text-sm leading-6">
-                  Select a single local video and inspect its metadata before extraction starts.
-                </p>
-              </div>
-              <UploadField onFileSelect={handleFileSelect} disabled={isGenerating} />
-            </section>
+        <article>
+          <h3>Build sheet</h3>
+          <p>
+            Generate a marginless PNG contact sheet from evenly sampled frames.
+          </p>
 
-            <SourceInfoPanel sourceInfo={sourceInfo} />
-          </div>
+          <button
+            type="button"
+            disabled={
+              !sourceFile ||
+              !sourceInfo?.durationSeconds ||
+              !layout.isValid ||
+              isGenerating ||
+              isInspectingSource
+            }
+            onClick={handleGenerate}
+          >
+            {isInspectingSource
+              ? 'Inspecting source'
+              : isGenerating
+                ? 'Generating'
+                : 'Generate flipbook'}
+          </button>
+        </article>
 
-          <div className="grid content-start gap-5">
-            <ConfigPanel
-              config={config}
-              layout={layout}
-              sourceDurationSeconds={sourceInfo?.durationSeconds ?? null}
-              sourceFrameCount={sourceInfo?.frameCount ?? null}
-              sourceWidth={sourceInfo?.width ?? null}
-              sourceHeight={sourceInfo?.height ?? null}
-              disabled={isGenerating}
-              onChange={setConfig}
-            />
+        <ProgressPanel progress={progress} error={error} logLines={logLines} />
 
-            <section className="metro-tile metro-tile-dark flex flex-col gap-5 p-6">
-              <div>
-                <p className="metro-kicker">Step 03</p>
-                <h2 className="metro-title mt-2">Build Sheet</h2>
-                <p className="metro-body mt-3 text-sm leading-6">
-                  Generate a marginless PNG contact sheet from evenly sampled frames.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="metro-button w-full sm:w-auto"
-                disabled={
-                  !sourceFile ||
-                  !sourceInfo?.durationSeconds ||
-                  !layout.isValid ||
-                  isGenerating ||
-                  isInspectingSource
-                }
-                onClick={handleGenerate}
-              >
-                {isInspectingSource
-                  ? 'Inspecting Source'
-                  : isGenerating
-                    ? 'Generating'
-                    : 'Generate Flipbook'}
-              </button>
-            </section>
-          </div>
-
-          <div className="grid content-start gap-5">
-            <ProgressPanel progress={progress} error={error} logLines={logLines} />
-            <PreviewPanel
-              result={result}
-              downloadFileName={downloadFileName}
-              onDownload={handleDownload}
-            />
-          </div>
+        <section ref={previewSectionRef}>
+          <PreviewPanel
+            result={result}
+            downloadFileName={downloadFileName}
+            onDownload={handleDownload}
+          />
         </section>
-      </div>
+      </section>
     </main>
   );
+}
+
+function scrollToSection(element: HTMLElement | null) {
+  if (!element) {
+    return;
+  }
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  element.scrollIntoView({
+    behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    block: 'start',
+  });
 }

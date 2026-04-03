@@ -7,59 +7,52 @@ type SourceInfoPanelProps = {
 
 export function SourceInfoPanel({ sourceInfo }: SourceInfoPanelProps) {
   return (
-    <section className="metro-tile p-6">
-      <div className="mb-5">
-        <p className="metro-kicker">Step 02</p>
-        <h2 className="metro-title mt-2">Source Snapshot</h2>
-        <p className="metro-body mt-3 text-sm leading-6">
-          Video metadata is read locally in the browser. Nothing is uploaded.
-        </p>
-      </div>
+    <article>
+      <h3>Source snapshot</h3>
+      <p>Video metadata is read locally in the browser. Nothing is uploaded.</p>
 
       {sourceInfo ? (
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="metro-metric">
+        <dl className="definition-grid">
+          <div className="definition-card">
             <dt>Name</dt>
-            <dd className="break-words">{sourceInfo.name}</dd>
+            <dd className="wrap-anywhere">{sourceInfo.name}</dd>
           </div>
-          <div className="metro-metric">
+          <div className="definition-card">
             <dt>Duration</dt>
             <dd>{formatDuration(sourceInfo.durationSeconds)}</dd>
           </div>
-          <div className="metro-metric">
+          <div className="definition-card">
             <dt>Resolution</dt>
             <dd>{sourceInfo.width && sourceInfo.height ? `${sourceInfo.width} x ${sourceInfo.height}` : 'Unknown'}</dd>
           </div>
-          <div className="metro-metric">
+          <div className="definition-card">
             <dt>Size</dt>
             <dd>{formatBytes(sourceInfo.sizeBytes)}</dd>
           </div>
-          <div className="metro-metric">
+          <div className="definition-card">
             <dt>Estimated Frames</dt>
             <dd>{sourceInfo.frameCount ?? 'Unknown'}</dd>
           </div>
-          <div className="metro-metric">
+          <div className="definition-card">
             <dt>Estimated Fps</dt>
             <dd>{sourceInfo.frameRate ? sourceInfo.frameRate.toFixed(3) : 'Unknown'}</dd>
           </div>
         </dl>
       ) : (
-        <p className="metro-body mt-3 text-sm leading-6">
-          Upload a video to inspect it and unlock generation.
-        </p>
+        <p>Upload a video to inspect it and unlock generation.</p>
       )}
 
       {sourceInfo && sourceInfo.sizeBytes > 250 * 1024 * 1024 ? (
-        <p className="mt-4 border-l-4 border-[var(--color-metro-orange)] pl-3 text-sm text-orange-300">
+        <p className="callout warning">
           Large source files can exceed browser memory limits while decoding frames.
         </p>
       ) : null}
 
       {sourceInfo?.frameRate ? (
-        <p className="metro-body mt-4 text-sm leading-6">
+        <p className="section-note">
           Source frame estimates currently assume a {sourceInfo.frameRate.toFixed(0)} fps clip.
         </p>
       ) : null}
-    </section>
+    </article>
   );
 }
