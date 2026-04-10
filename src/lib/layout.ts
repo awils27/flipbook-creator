@@ -7,7 +7,7 @@ export type GridOption = {
 };
 
 export function deriveLayout(config: FlipbookConfig): DerivedLayout {
-  const { sheetSize, columns, rows } = config;
+  const { sheetWidth, sheetHeight, columns, rows } = config;
 
   if (!Number.isInteger(columns) || columns <= 0) {
     return invalidLayout('Columns must be a positive integer.');
@@ -17,22 +17,27 @@ export function deriveLayout(config: FlipbookConfig): DerivedLayout {
     return invalidLayout('Rows must be a positive integer.');
   }
 
-  if (sheetSize % columns !== 0 || sheetSize % rows !== 0) {
-    return invalidLayout('Sheet size must divide evenly by both columns and rows.');
+  if (sheetWidth % columns !== 0 || sheetHeight % rows !== 0) {
+    return invalidLayout('Sheet width and height must divide evenly by the chosen grid.');
   }
 
-  const cellWidth = sheetSize / columns;
-  const cellHeight = sheetSize / rows;
+  if (columns !== rows) {
+    return invalidLayout('Columns and rows must match so cells keep the sheet aspect ratio.');
+  }
 
-  if (cellWidth !== cellHeight) {
-    return invalidLayout('The chosen grid does not produce square cells.');
+  const cellWidth = sheetWidth / columns;
+  const cellHeight = sheetHeight / rows;
+
+  if (cellWidth * sheetHeight !== cellHeight * sheetWidth) {
+    return invalidLayout('The chosen grid does not preserve the sheet aspect ratio per cell.');
   }
 
   return {
     totalFrames: columns * rows,
-    cellSize: cellWidth,
-    outputWidth: sheetSize,
-    outputHeight: sheetSize,
+    cellWidth,
+    cellHeight,
+    outputWidth: sheetWidth,
+    outputHeight: sheetHeight,
     isValid: true,
   };
 }
@@ -54,18 +59,19 @@ export function buildSamplingTimestamps(durationSeconds: number, frameCount: num
   });
 }
 
-export function getValidGridOptions(sheetSize: number): GridOption[] {
+export function getValidGridOptions(sheetWidth: number, sheetHeight: number): GridOption[] {
   const options: GridOption[] = [];
+  const maxDivisor = Math.min(sheetWidth, sheetHeight);
 
-  for (let divisor = 1; divisor <= sheetSize; divisor += 1) {
-    if (sheetSize % divisor !== 0) {
+  for (let divisor = 1; divisor <= maxDivisor; divisor += 1) {
+    if (sheetWidth % divisor !== 0 || sheetHeight % divisor !== 0) {
       continue;
     }
 
     options.push({
       columns: divisor,
       rows: divisor,
-      label: `${divisor} x ${divisor} (${sheetSize / divisor}px cells)`,
+      label: `${divisor} x ${divisor} (${sheetWidth / divisor} x ${sheetHeight / divisor}px cells)`,
     });
   }
 
@@ -75,7 +81,8 @@ export function getValidGridOptions(sheetSize: number): GridOption[] {
 function invalidLayout(message: string): DerivedLayout {
   return {
     totalFrames: 0,
-    cellSize: 0,
+    cellWidth: 0,
+    cellHeight: 0,
     outputWidth: 0,
     outputHeight: 0,
     isValid: false,

@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { calculateContainPlacement, drawFrameToCell } from './composite';
 
 describe('calculateContainPlacement', () => {
-  it('centers a wide frame inside a square cell', () => {
-    const placement = calculateContainPlacement(200, 100, 128);
+  it('centers a wide frame inside a rectangular cell', () => {
+    const placement = calculateContainPlacement(200, 100, 128, 64);
 
     expect(placement.width).toBe(128);
     expect(placement.height).toBe(64);
     expect(placement.x).toBe(0);
-    expect(placement.y).toBe(32);
+    expect(placement.y).toBe(0);
   });
 });
 
@@ -23,10 +23,11 @@ describe('drawFrameToCell', () => {
       source,
       x: 16,
       y: 24,
-      cellSize: 128,
+      cellWidth: 128,
+      cellHeight: 64,
       fitMode: 'stretch',
     });
 
-    expect(drawImage).toHaveBeenCalledWith(source, 16, 24, 128, 128);
+    expect(drawImage).toHaveBeenCalledWith(source, 16, 24, 128, 64);
   });
 });

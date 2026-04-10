@@ -4,9 +4,10 @@ import { buildSamplingTimestamps, deriveLayout, getValidGridOptions } from './la
 describe('deriveLayout', () => {
   it('rejects layouts where the sheet does not divide evenly', () => {
     const layout = deriveLayout({
-      sheetSize: 1024,
+      sheetWidth: 1024,
+      sheetHeight: 512,
       columns: 7,
-      rows: 8,
+      rows: 7,
       fitMode: 'contain',
     });
 
@@ -14,31 +15,34 @@ describe('deriveLayout', () => {
     expect(layout.validationMessage).toMatch(/divide evenly/i);
   });
 
-  it('rejects non-square derived cells', () => {
+  it('rejects non-matching grid dimensions so cells keep the sheet aspect ratio', () => {
     const layout = deriveLayout({
-      sheetSize: 1024,
+      sheetWidth: 1024,
+      sheetHeight: 512,
       columns: 8,
       rows: 4,
       fitMode: 'contain',
     });
 
     expect(layout.isValid).toBe(false);
-    expect(layout.validationMessage).toMatch(/square cells/i);
+    expect(layout.validationMessage).toMatch(/columns and rows must match/i);
   });
 
-  it('returns a valid layout for square cells', () => {
+  it('returns a valid layout for rectangular sheets with matching cell aspect ratio', () => {
     const layout = deriveLayout({
-      sheetSize: 1024,
-      columns: 8,
-      rows: 8,
+      sheetWidth: 1024,
+      sheetHeight: 512,
+      columns: 4,
+      rows: 4,
       fitMode: 'contain',
     });
 
     expect(layout).toMatchObject({
-      totalFrames: 64,
-      cellSize: 128,
+      totalFrames: 16,
+      cellWidth: 256,
+      cellHeight: 128,
       outputWidth: 1024,
-      outputHeight: 1024,
+      outputHeight: 512,
       isValid: true,
     });
   });
@@ -55,14 +59,13 @@ describe('buildSamplingTimestamps', () => {
 });
 
 describe('getValidGridOptions', () => {
-  it('returns square grid options that evenly divide the selected sheet size', () => {
-    const options = getValidGridOptions(8);
+  it('returns square grid options that evenly divide both selected sheet dimensions', () => {
+    const options = getValidGridOptions(8, 4);
 
     expect(options).toEqual([
-      { columns: 1, rows: 1, label: '1 x 1 (8px cells)' },
-      { columns: 2, rows: 2, label: '2 x 2 (4px cells)' },
-      { columns: 4, rows: 4, label: '4 x 4 (2px cells)' },
-      { columns: 8, rows: 8, label: '8 x 8 (1px cells)' },
+      { columns: 1, rows: 1, label: '1 x 1 (8 x 4px cells)' },
+      { columns: 2, rows: 2, label: '2 x 2 (4 x 2px cells)' },
+      { columns: 4, rows: 4, label: '4 x 4 (2 x 1px cells)' },
     ]);
   });
 });

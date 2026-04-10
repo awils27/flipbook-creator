@@ -102,7 +102,12 @@ export async function extractFrames(
   try {
     const outputFrames: Blob[] = [];
     const framePattern = 'frame-%05d.png';
-    const filter = buildBatchFilter(timestamps, layout.cellSize, config.fitMode);
+    const filter = buildBatchFilter(
+      timestamps,
+      layout.cellWidth,
+      layout.cellHeight,
+      config.fitMode,
+    );
     const exitCode = await ffmpeg.exec([
       '-y',
       '-i',

@@ -24,7 +24,7 @@ export function ConfigPanel({
   disabled = false,
   onChange,
 }: ConfigPanelProps) {
-  const gridOptions = getValidGridOptions(config.sheetSize);
+  const gridOptions = getValidGridOptions(config.sheetWidth, config.sheetHeight);
   const selectedGridValue = `${config.columns}x${config.rows}`;
   const playbackFps =
     layout.isValid && sourceDurationSeconds && sourceDurationSeconds > 0
@@ -49,25 +49,46 @@ export function ConfigPanel({
     <article>
       <h3>Tile configuration</h3>
       <p>
-        Square cells only in v1. Grid options are filtered to valid combinations for the sheet size.
+        Sheet width and height can be configured independently. Grid options are limited to square
+        counts so each cell keeps the same aspect ratio as the full sheet.
       </p>
 
       <div className="form-grid">
         <label>
-          <span>Sheet size</span>
+          <span>Sheet width</span>
           <select
-            value={config.sheetSize}
+            value={config.sheetWidth}
             disabled={disabled}
             onChange={(event) =>
               onChange({
                 ...config,
-                sheetSize: Number(event.target.value) as FlipbookSheetSize,
+                sheetWidth: Number(event.target.value) as FlipbookSheetSize,
               })
             }
           >
             {SHEET_SIZES.map((size) => (
-              <option key={size} value={size}>
-                {size} x {size}
+              <option key={`width-${size}`} value={size}>
+                {size}px
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span>Sheet height</span>
+          <select
+            value={config.sheetHeight}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({
+                ...config,
+                sheetHeight: Number(event.target.value) as FlipbookSheetSize,
+              })
+            }
+          >
+            {SHEET_SIZES.map((size) => (
+              <option key={`height-${size}`} value={size}>
+                {size}px
               </option>
             ))}
           </select>
@@ -77,7 +98,7 @@ export function ConfigPanel({
           <span>Grid</span>
           <select
             value={selectedGridValue}
-            disabled={disabled}
+            disabled={disabled || gridOptions.length === 0}
             onChange={(event) => {
               const [columns, rows] = event.target.value.split('x').map(Number);
               onChange({
@@ -129,7 +150,11 @@ export function ConfigPanel({
         </div>
         <div className="definition-card">
           <dt>Cell Size</dt>
-          <dd>{layout.cellSize ? `${layout.cellSize}px` : '-'}</dd>
+          <dd>
+            {layout.cellWidth && layout.cellHeight
+              ? `${layout.cellWidth} x ${layout.cellHeight}px`
+              : '-'}
+          </dd>
         </div>
         <div className="definition-card">
           <dt>Output Size</dt>
@@ -154,10 +179,10 @@ export function ConfigPanel({
 
       {!layout.isValid ? <p className="callout error">{layout.validationMessage}</p> : null}
 
-      {config.sheetSize >= 4096 ? (
+      {Math.max(config.sheetWidth, config.sheetHeight) >= 4096 ? (
         <p className="callout warning">
-          {config.sheetSize} textures can be expensive in browser memory. Expect longer processing
-          times.
+          Large textures can be expensive in browser memory. Expect longer processing times once
+          either sheet dimension reaches 4096 or above.
         </p>
       ) : null}
 
@@ -170,9 +195,10 @@ export function ConfigPanel({
 
       {unstretchScaleLabel ? (
         <p className="section-note">
-          Because frames are stretched into square cells, apply an in-engine unstretch scale of{' '}
-          <strong>{unstretchScaleLabel}</strong> to recover the original {aspectRatioLabel} frame
-          shape.
+          Stretch mode fills each sheet-shaped cell exactly. If you want to preserve the source
+          frame shape instead, switch to <strong>Contain</strong> or apply an in-engine unstretch
+          scale of <strong>{unstretchScaleLabel}</strong> to recover the original{' '}
+          {aspectRatioLabel} frame shape.
         </p>
       ) : null}
     </article>

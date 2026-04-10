@@ -3,7 +3,8 @@ export type FitMode = 'contain' | 'stretch';
 export type FlipbookSheetSize = 256 | 512 | 1024 | 2048 | 4096 | 8192;
 
 export type FlipbookConfig = {
-  sheetSize: FlipbookSheetSize;
+  sheetWidth: FlipbookSheetSize;
+  sheetHeight: FlipbookSheetSize;
   columns: number;
   rows: number;
   fitMode: FitMode;
@@ -22,7 +23,8 @@ export type SourceVideoInfo = {
 
 export type DerivedLayout = {
   totalFrames: number;
-  cellSize: number;
+  cellWidth: number;
+  cellHeight: number;
   outputWidth: number;
   outputHeight: number;
   isValid: boolean;

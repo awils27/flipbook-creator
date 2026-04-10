@@ -2,7 +2,7 @@ import type { FlipbookConfig } from '../types';
 
 export function createOutputFileName(fileName: string, config: FlipbookConfig): string {
   const sanitizedBase = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]+/g, '-');
-  return `${sanitizedBase || 'video'}-flipbook-${config.sheetSize}-${config.columns}x${config.rows}.png`;
+  return `${sanitizedBase || 'video'}-flipbook-${config.sheetWidth}x${config.sheetHeight}-${config.columns}x${config.rows}.png`;
 }
 
 export function downloadBlob(blob: Blob, fileName: string): void {

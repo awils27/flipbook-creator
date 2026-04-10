@@ -6,36 +6,46 @@ type DrawFrameArgs = {
   source: CanvasImageSource;
   x: number;
   y: number;
-  cellSize: number;
+  cellWidth: number;
+  cellHeight: number;
   fitMode: FlipbookConfig['fitMode'];
 };
 
 export function calculateContainPlacement(
   sourceWidth: number,
   sourceHeight: number,
-  cellSize: number,
+  cellWidth: number,
+  cellHeight: number,
 ): { x: number; y: number; width: number; height: number } {
-  const scale = Math.min(cellSize / sourceWidth, cellSize / sourceHeight);
+  const scale = Math.min(cellWidth / sourceWidth, cellHeight / sourceHeight);
   const width = sourceWidth * scale;
   const height = sourceHeight * scale;
 
   return {
-    x: (cellSize - width) / 2,
-    y: (cellSize - height) / 2,
+    x: (cellWidth - width) / 2,
+    y: (cellHeight - height) / 2,
     width,
     height,
   };
 }
 
-export function drawFrameToCell({ context, source, x, y, cellSize, fitMode }: DrawFrameArgs): void {
+export function drawFrameToCell({
+  context,
+  source,
+  x,
+  y,
+  cellWidth,
+  cellHeight,
+  fitMode,
+}: DrawFrameArgs): void {
   if (fitMode === 'stretch') {
-    context.drawImage(source, x, y, cellSize, cellSize);
+    context.drawImage(source, x, y, cellWidth, cellHeight);
     return;
   }
 
   const sourceWidth = getSourceWidth(source);
   const sourceHeight = getSourceHeight(source);
-  const placement = calculateContainPlacement(sourceWidth, sourceHeight, cellSize);
+  const placement = calculateContainPlacement(sourceWidth, sourceHeight, cellWidth, cellHeight);
 
   context.drawImage(source, x + placement.x, y + placement.y, placement.width, placement.height);
 }
@@ -67,15 +77,16 @@ export async function composeFlipbook(
     const bitmap = await createImageBitmap(frame);
     const column = index % config.columns;
     const row = Math.floor(index / config.columns);
-    const x = column * layout.cellSize;
-    const y = row * layout.cellSize;
+    const x = column * layout.cellWidth;
+    const y = row * layout.cellHeight;
 
     drawFrameToCell({
       context,
       source: bitmap,
       x,
       y,
-      cellSize: layout.cellSize,
+      cellWidth: layout.cellWidth,
+      cellHeight: layout.cellHeight,
       fitMode: config.fitMode,
     });
 
@@ -124,15 +135,16 @@ export function createFlipbookComposer(config: FlipbookConfig): FlipbookComposer
       const bitmap = await createImageBitmap(frame);
       const column = index % config.columns;
       const row = Math.floor(index / config.columns);
-      const x = column * layout.cellSize;
-      const y = row * layout.cellSize;
+      const x = column * layout.cellWidth;
+      const y = row * layout.cellHeight;
 
       drawFrameToCell({
         context,
         source: bitmap,
         x,
         y,
-        cellSize: layout.cellSize,
+        cellWidth: layout.cellWidth,
+        cellHeight: layout.cellHeight,
         fitMode: config.fitMode,
       });
 

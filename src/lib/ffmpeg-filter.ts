@@ -1,26 +1,28 @@
 import type { FlipbookConfig } from '../types';
 
 export function buildFrameFilter(
-  cellSize: number,
+  cellWidth: number,
+  cellHeight: number,
   fitMode: FlipbookConfig['fitMode'],
 ): string {
   const filters = [buildDisplayAspectCorrectionFilter()];
 
   if (fitMode === 'stretch') {
-    filters.push(`scale=${cellSize}:${cellSize}:flags=lanczos`);
+    filters.push(`scale=${cellWidth}:${cellHeight}:flags=lanczos`);
     return filters.join(',');
   }
 
   filters.push(
-    `scale=${cellSize}:${cellSize}:force_original_aspect_ratio=decrease:flags=lanczos`,
-    `pad=${cellSize}:${cellSize}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
+    `scale=${cellWidth}:${cellHeight}:force_original_aspect_ratio=decrease:flags=lanczos`,
+    `pad=${cellWidth}:${cellHeight}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`,
   );
   return filters.join(',');
 }
 
 export function buildBatchFilter(
   timestamps: number[],
-  cellSize: number,
+  cellWidth: number,
+  cellHeight: number,
   fitMode: FlipbookConfig['fitMode'],
 ): string {
   if (timestamps.length === 0) {
@@ -34,7 +36,7 @@ export function buildBatchFilter(
 
   return [
     `fps=${fps}:start_time=${firstSampleSeconds}:round=near`,
-    buildFrameFilter(cellSize, fitMode),
+    buildFrameFilter(cellWidth, cellHeight, fitMode),
   ].join(',');
 }
 

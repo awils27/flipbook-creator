@@ -17,7 +17,8 @@ import { readSourceVideoInfo } from './lib/video';
 import type { FlipbookConfig, GenerationResult, ProgressState, SourceVideoInfo } from './types';
 
 const DEFAULT_CONFIG: FlipbookConfig = {
-  sheetSize: 1024,
+  sheetWidth: 1024,
+  sheetHeight: 1024,
   columns: 8,
   rows: 8,
   fitMode: 'stretch',
@@ -60,7 +61,7 @@ export default function App() {
   }, [result]);
 
   useEffect(() => {
-    const validGridOptions = getValidGridOptions(config.sheetSize);
+    const validGridOptions = getValidGridOptions(config.sheetWidth, config.sheetHeight);
     const hasCurrentOption = validGridOptions.some(
       (option) => option.columns === config.columns && option.rows === config.rows,
     );
@@ -82,7 +83,7 @@ export default function App() {
       columns: fallbackOption.columns,
       rows: fallbackOption.rows,
     }));
-  }, [config.sheetSize, config.columns, config.rows]);
+  }, [config.sheetWidth, config.sheetHeight, config.columns, config.rows]);
 
   useEffect(() => {
     if (!sourceFile) {
@@ -267,7 +268,8 @@ export default function App() {
             total,
             indeterminate: false,
           });
-        });
+        },
+      );
 
       setProgress({
         phase: 'compositing',
@@ -387,9 +389,7 @@ export default function App() {
 
         <article>
           <h3>Build sheet</h3>
-          <p>
-            Generate a marginless PNG contact sheet from evenly sampled frames.
-          </p>
+          <p>Generate a marginless PNG contact sheet from evenly sampled frames.</p>
 
           <button
             type="button"
